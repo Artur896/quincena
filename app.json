@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Quincena",
+    "slug": "quincena",
+    "version": "0.1.0",
+    "owner": "quincena",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#0B0B0C"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.quincena.app"
+    },
+    "android": {
+      "package": "com.quincena.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B0C"
+      }
+    },
+    "extra": {
+      "supabaseUrl": "SUPABASE_URL_PLACEHOLDER",
+      "supabaseAnonKey": "SUPABASE_ANON_KEY_PLACEHOLDER"
+    }
+  }
+}
