@@ -220,10 +220,10 @@ create policy "quincena_assets_owner_write" on storage.objects
 -- -----------------------------------------------------------------------------
 insert into public.goal_categories (id, name, priority, default_target, color, icon, description, weight)
 values
-  ('casa', 'Casa', 'maxima', 50000, '#E8C468', 'home', 'Construcción y patrimonio', 40),
-  ('viajes', 'Viajes', 'alta', 15000, '#6FA8DC', 'airplane', 'Vacaciones o experiencias importantes', 30),
-  ('compu', 'Compu', 'media', 20000, '#9B8CDB', 'laptop', 'Computadora, periféricos o tecnología', 20),
-  ('ropa', 'Ropa', 'baja', 5000, '#E0899B', 'shirt', 'Vestimenta y accesorios', 10)
+  ('casa', 'Casa', 'maxima', 50000, '#D98A5C', 'home', 'Construcción y patrimonio', 40),
+  ('viajes', 'Viajes', 'alta', 15000, '#57A8D8', 'airplane', 'Vacaciones o experiencias importantes', 30),
+  ('compu', 'Compu', 'media', 20000, '#8F7FE0', 'laptop', 'Computadora, periféricos o tecnología', 20),
+  ('ropa', 'Ropa', 'baja', 5000, '#E17FA0', 'shirt', 'Vestimenta y accesorios', 10)
 on conflict (id) do update set
   name = excluded.name,
   priority = excluded.priority,

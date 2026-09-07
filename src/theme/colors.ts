@@ -1,12 +1,12 @@
 export const colors = {
-  background: "#0B0B0C",
-  surface: "#161618",
-  surfaceElevated: "#1F1F22",
-  border: "#2A2A2E",
+  background: "#0B0B0A",
+  surface: "#171512",
+  surfaceElevated: "#201D19",
+  border: "#2C2924",
 
   textPrimary: "#F5F5F4",
-  textSecondary: "#A1A1A6",
-  textTertiary: "#6B6B70",
+  textSecondary: "#A8A29B",
+  textTertiary: "#726C63",
 
   accent: "#E8C468",
   accentSoft: "rgba(232, 196, 104, 0.14)",
@@ -14,10 +14,13 @@ export const colors = {
   success: "#5FBF8F",
   danger: "#E0684F",
 
-  categoryCasa: "#E8C468",
-  categoryViajes: "#6FA8DC",
-  categoryCompu: "#9B8CDB",
-  categoryRopa: "#E0899B",
+  // Cada categoría tiene su propio tono (antes "casa" reusaba el accent y se
+  // perdía contra los botones/estados activos). El accent queda reservado
+  // para el cromo de la UI (botones, tab activo, foco).
+  categoryCasa: "#D98A5C",
+  categoryViajes: "#57A8D8",
+  categoryCompu: "#8F7FE0",
+  categoryRopa: "#E17FA0",
 } as const;
 
 export type ColorToken = keyof typeof colors;
