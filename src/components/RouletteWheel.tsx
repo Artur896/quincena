@@ -41,13 +41,6 @@ function describeSegment(cx: number, cy: number, r: number, startAngle: number, 
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
 }
 
-/** Evita etiquetas de cabeza en la mitad inferior de la rueda: en ese rango
- * el rotate() de SVG las voltearía 180° respecto a una lectura normal. */
-function readableLabelRotation(midAngle: number): number {
-  const normalized = ((midAngle % 360) + 360) % 360;
-  return normalized > 90 && normalized < 270 ? midAngle + 180 : midAngle;
-}
-
 export function RouletteWheel({
   categories,
   size,
@@ -133,38 +126,23 @@ export function RouletteWheel({
           <Circle cx={radius} cy={radius} r={radius * 0.15} fill={colors.surface} stroke={colors.accent} strokeWidth={2} />
           <Circle cx={radius} cy={radius} r={3} fill={colors.accent} />
         </Svg>
-
-        {/* Ícono + nombre por segmento, como Views normales (no SVG) para
-            poder usar los mismos glifos de Ionicons que el resto de la app;
-            viven dentro del mismo Animated.View que gira, así quedan
-            pegados a su segmento en todo momento. */}
-        {segments.map(({ category, midAngle }) => {
-          const label = polarToCartesian(radius, radius, labelRadius, midAngle);
-          return (
-            <View
-              key={category.id}
-              pointerEvents="none"
-              style={[
-                styles.segmentLabel,
-                {
-                  left: label.x - 22,
-                  top: label.y - 18,
-                  transform: [{ rotate: `${readableLabelRotation(midAngle)}deg` }],
-                },
-              ]}
-            >
-              <Ionicons
-                name={category.icon as keyof typeof Ionicons.glyphMap}
-                size={15}
-                color={colors.background}
-              />
-              <Text style={styles.segmentLabelText}>{category.name}</Text>
-            </View>
-          );
-        })}
       </Animated.View>
 
+      {/* Ícono + nombre por segmento: viven FUERA del Animated.View que gira
+          y se mueven en órbita usando el mismo `rotation` compartido, pero
+          sin rotar ellos mismos — así siempre quedan derechos y legibles,
+          en vez de quedar chuecos al ángulo arbitrario donde se detiene la
+          rueda (bug reportado: se veían "descuadrados" tras girar). */}
       <View pointerEvents="none" style={[styles.burstOverlay, { width: resolvedSize, height: resolvedSize }]}>
+        {segments.map(({ category, midAngle }) => (
+          <SegmentLabel
+            key={category.id}
+            rotation={rotation}
+            midAngle={midAngle}
+            distance={labelRadius}
+            category={category}
+          />
+        ))}
         <Animated.View style={[styles.pulse, { backgroundColor: burstColor }, pulseStyle]} />
         {sparkAngles.map((angleDeg) => (
           <Spark
@@ -177,6 +155,39 @@ export function RouletteWheel({
         ))}
       </View>
     </View>
+  );
+}
+
+function SegmentLabel({
+  rotation,
+  midAngle,
+  distance,
+  category,
+}: {
+  rotation: SharedValue<number>;
+  midAngle: number;
+  distance: number;
+  category: GoalCategory;
+}) {
+  const style = useAnimatedStyle(() => {
+    const angleRad = ((midAngle + rotation.value - 90) * Math.PI) / 180;
+    return {
+      transform: [
+        { translateX: Math.cos(angleRad) * distance },
+        { translateY: Math.sin(angleRad) * distance },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.segmentLabel, style]}>
+      <Ionicons
+        name={category.icon as keyof typeof Ionicons.glyphMap}
+        size={15}
+        color={colors.background}
+      />
+      <Text style={styles.segmentLabelText}>{category.name}</Text>
+    </Animated.View>
   );
 }
 
