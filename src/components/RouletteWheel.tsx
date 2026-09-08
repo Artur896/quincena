@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { StyleSheet, View, useWindowDimensions } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   Easing,
   interpolate,
@@ -8,7 +9,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
-import Svg, { Circle, Defs, G, Path, RadialGradient, Stop, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, Defs, G, Path, RadialGradient, Stop } from "react-native-svg";
 
 import { colors } from "@/theme";
 import { successHaptic } from "@/utils/haptics";
@@ -104,6 +105,7 @@ export function RouletteWheel({
       <View style={styles.pointer} />
 
       <View style={[styles.rim, { width: resolvedSize + 16, height: resolvedSize + 16, borderRadius: (resolvedSize + 16) / 2 }]} />
+      <View style={[styles.trim, { width: resolvedSize + 8, height: resolvedSize + 8, borderRadius: (resolvedSize + 8) / 2 }]} />
 
       <Animated.View style={[{ width: resolvedSize, height: resolvedSize }, animatedStyle]}>
         <Svg width={resolvedSize} height={resolvedSize} viewBox={`0 0 ${resolvedSize} ${resolvedSize}`}>
@@ -115,30 +117,15 @@ export function RouletteWheel({
             </RadialGradient>
           </Defs>
           <G>
-            {segments.map(({ category, startAngle, endAngle, midAngle }) => {
-              const label = polarToCartesian(radius, radius, labelRadius, midAngle);
-              return (
-                <G key={category.id}>
-                  <Path
-                    d={describeSegment(radius, radius, radius - 4, startAngle, endAngle)}
-                    fill={category.color}
-                    stroke={colors.background}
-                    strokeWidth={3}
-                  />
-                  <SvgText
-                    x={label.x}
-                    y={label.y}
-                    fill={colors.background}
-                    fontSize={12}
-                    fontWeight="700"
-                    textAnchor="middle"
-                    transform={`rotate(${readableLabelRotation(midAngle)}, ${label.x}, ${label.y})`}
-                  >
-                    {category.name}
-                  </SvgText>
-                </G>
-              );
-            })}
+            {segments.map(({ category, startAngle, endAngle }) => (
+              <Path
+                key={category.id}
+                d={describeSegment(radius, radius, radius - 4, startAngle, endAngle)}
+                fill={category.color}
+                stroke={colors.background}
+                strokeWidth={3}
+              />
+            ))}
           </G>
           {/* Brillo global, no por segmento: da profundidad sin romper los colores planos de cada categoría. */}
           <Circle cx={radius} cy={radius} r={radius - 4} fill="url(#wheelSheen)" />
@@ -146,6 +133,35 @@ export function RouletteWheel({
           <Circle cx={radius} cy={radius} r={radius * 0.15} fill={colors.surface} stroke={colors.accent} strokeWidth={2} />
           <Circle cx={radius} cy={radius} r={3} fill={colors.accent} />
         </Svg>
+
+        {/* Ícono + nombre por segmento, como Views normales (no SVG) para
+            poder usar los mismos glifos de Ionicons que el resto de la app;
+            viven dentro del mismo Animated.View que gira, así quedan
+            pegados a su segmento en todo momento. */}
+        {segments.map(({ category, midAngle }) => {
+          const label = polarToCartesian(radius, radius, labelRadius, midAngle);
+          return (
+            <View
+              key={category.id}
+              pointerEvents="none"
+              style={[
+                styles.segmentLabel,
+                {
+                  left: label.x - 22,
+                  top: label.y - 18,
+                  transform: [{ rotate: `${readableLabelRotation(midAngle)}deg` }],
+                },
+              ]}
+            >
+              <Ionicons
+                name={category.icon as keyof typeof Ionicons.glyphMap}
+                size={15}
+                color={colors.background}
+              />
+              <Text style={styles.segmentLabelText}>{category.name}</Text>
+            </View>
+          );
+        })}
       </Animated.View>
 
       <View pointerEvents="none" style={[styles.burstOverlay, { width: resolvedSize, height: resolvedSize }]}>
@@ -202,6 +218,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  trim: {
+    position: "absolute",
+    top: 8,
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
+  segmentLabel: {
+    position: "absolute",
+    width: 44,
+    alignItems: "center",
+    gap: 1,
+  },
+  segmentLabelText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.background,
   },
   pointerPin: {
     position: "absolute",
