@@ -2,7 +2,7 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { PrimaryButton, Screen } from "@/components";
+import { ErrorBanner, PrimaryButton, Screen } from "@/components";
 import { signInWithGoogle } from "@/services/authService";
 import { colors, spacing, typography } from "@/theme";
 
@@ -38,7 +38,7 @@ export function LoginScreen() {
           loading={loading}
           icon={<Ionicons name="logo-google" size={18} color={colors.background} />}
         />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <ErrorBanner message={error} /> : null}
       </View>
     </Screen>
   );
@@ -57,10 +57,5 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing.md,
-  },
-  error: {
-    ...typography.caption,
-    color: colors.danger,
-    textAlign: "center",
   },
 });

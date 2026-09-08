@@ -1,6 +1,7 @@
 export * from "./Card";
 export * from "./CategoryPill";
 export * from "./EmptyState";
+export * from "./ErrorBanner";
 export * from "./MoneyText";
 export * from "./MovementRow";
 export * from "./PrimaryButton";

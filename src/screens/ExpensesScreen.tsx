@@ -1,9 +1,18 @@
 import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
-import { Card, EmptyState, MoneyText, PrimaryButton, Screen, SectionHeader } from "@/components";
+import { Card, EmptyState, ErrorBanner, MoneyText, PrimaryButton, Screen, SectionHeader } from "@/components";
 import { useAppStore } from "@/store/useAppStore";
 import { colors, radius, spacing, typography } from "@/theme";
 
@@ -19,15 +28,24 @@ export function ExpensesScreen() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(QUICK_CATEGORIES[0]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function openModal() {
+    setError(null);
+    setModalVisible(true);
+  }
 
   async function handleSave() {
     if (!amount) return;
+    setError(null);
     setSaving(true);
     try {
       await addExpense({ amount: Number(amount), category, description });
       setAmount("");
       setDescription("");
       setModalVisible(false);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setSaving(false);
     }
@@ -47,7 +65,7 @@ export function ExpensesScreen() {
         </Card>
       </Animated.View>
 
-      <PrimaryButton label="Registrar gasto" onPress={() => setModalVisible(true)} />
+      <PrimaryButton label="Registrar gasto" onPress={openModal} />
 
       <Animated.View entering={FadeInDown.delay(100).duration(400)}>
         <SectionHeader title="Historial" />
@@ -81,66 +99,81 @@ export function ExpensesScreen() {
       </Animated.View>
 
       <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={typography.title}>Nuevo gasto</Text>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <Text style={[typography.title, styles.modalTitle]}>Nuevo gasto</Text>
 
-            <TextInput
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="Monto"
-              placeholderTextColor={colors.textTertiary}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Descripción (opcional)"
-              placeholderTextColor={colors.textTertiary}
-              style={styles.input}
-            />
-
-            <View style={styles.categoryRow}>
-              {QUICK_CATEGORIES.map((item) => (
-                <Pressable
-                  key={item}
-                  onPress={() => setCategory(item)}
-                  style={[styles.categoryChip, category === item && styles.categoryChipActive]}
-                >
-                  <Text
-                    style={[
-                      typography.caption,
-                      category === item && { color: colors.background },
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={styles.modalActions}>
-              <Pressable onPress={() => setModalVisible(false)} style={styles.cancelButton}>
-                <Ionicons name="close" size={20} color={colors.textSecondary} />
-              </Pressable>
-              <View style={styles.confirmButton}>
-                <PrimaryButton
-                  label="Guardar"
-                  onPress={handleSave}
-                  disabled={!amount}
-                  loading={saving}
+              <View style={styles.amountRow}>
+                <Text style={styles.currencySign}>$</Text>
+                <TextInput
+                  value={amount}
+                  onChangeText={(text) => setAmount(text.replace(/[^0-9.]/g, ""))}
+                  placeholder="0"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="decimal-pad"
+                  style={styles.amountInput}
+                  autoFocus
                 />
+              </View>
+
+              <TextInput
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Descripción (opcional)"
+                placeholderTextColor={colors.textTertiary}
+                style={styles.input}
+              />
+
+              <View style={styles.categoryRow}>
+                {QUICK_CATEGORIES.map((item) => (
+                  <Pressable
+                    key={item}
+                    onPress={() => setCategory(item)}
+                    style={[styles.categoryChip, category === item && styles.categoryChipActive]}
+                  >
+                    <Text
+                      style={[
+                        typography.caption,
+                        category === item && { color: colors.background },
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {error ? <ErrorBanner message={error} /> : null}
+
+              <View style={styles.modalActions}>
+                <Pressable onPress={() => setModalVisible(false)} style={styles.cancelButton}>
+                  <Ionicons name="close" size={20} color={colors.textSecondary} />
+                </Pressable>
+                <View style={styles.confirmButton}>
+                  <PrimaryButton
+                    label="Guardar"
+                    onPress={handleSave}
+                    disabled={!amount}
+                    loading={saving}
+                  />
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   header: {
     gap: 4,
   },
@@ -168,6 +201,26 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "flex-end",
     alignItems: "center",
+  },
+  modalTitle: {
+    textAlign: "center",
+  },
+  amountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.sm,
+  },
+  currencySign: {
+    ...typography.money,
+    color: colors.textTertiary,
+    marginRight: 2,
+  },
+  amountInput: {
+    ...typography.money,
+    minWidth: 40,
+    padding: 0,
+    textAlign: "center",
   },
   modalCard: {
     width: "100%",

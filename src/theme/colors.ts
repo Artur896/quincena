@@ -13,6 +13,7 @@ export const colors = {
 
   success: "#5FBF8F",
   danger: "#E0684F",
+  dangerSoft: "rgba(224, 104, 79, 0.14)",
 
   // Cada categoría tiene su propio tono (antes "casa" reusaba el accent y se
   // perdía contra los botones/estados activos). El accent queda reservado

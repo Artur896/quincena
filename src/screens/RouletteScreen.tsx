@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Card, PrimaryButton, RouletteWheel, Screen } from "@/components";
+import { Card, ErrorBanner, PrimaryButton, RouletteWheel, Screen } from "@/components";
 import { GOAL_CATEGORIES, getCategoryById } from "@/constants/categories";
 import { useAppStore } from "@/store/useAppStore";
 import { colors, spacing, typography } from "@/theme";
@@ -95,7 +95,7 @@ export function RouletteScreen() {
         </Text>
       ) : null}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <ErrorBanner message={error} /> : null}
 
       <PrimaryButton
         label={spinning ? "Girando..." : "Girar la ruleta"}
@@ -124,11 +124,6 @@ const styles = StyleSheet.create({
   },
   notice: {
     ...typography.caption,
-    textAlign: "center",
-  },
-  error: {
-    ...typography.caption,
-    color: colors.danger,
     textAlign: "center",
   },
 });
