@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { Card, PrimaryButton, Screen } from "@/components";
 import { useAppStore } from "@/store/useAppStore";
@@ -40,19 +41,21 @@ export function OnboardingScreen() {
         </Text>
       </View>
 
-      <View style={styles.form}>
+      <Animated.View entering={FadeInDown.delay(40).duration(400)} style={styles.form}>
         <Field label="Ingreso quincenal" value={income} onChangeText={setIncome} />
         <Field label="Transporte fijo" value={transport} onChangeText={setTransport} />
         <Field label="Dinero libre deseado" value={free} onChangeText={setFree} />
-      </View>
+      </Animated.View>
 
-      <Card>
-        <Text style={typography.caption}>Dinero para metas (calculado)</Text>
-        <Text style={[typography.title, styles.allocation]}>{formatMoney(goalsAllocation)}</Text>
-        <Text style={typography.caption}>
-          Cada quincena este monto se acumulará automáticamente en tu meta del mes.
-        </Text>
-      </Card>
+      <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+        <Card>
+          <Text style={typography.caption}>Dinero para metas (calculado)</Text>
+          <Text style={[typography.title, styles.allocation]}>{formatMoney(goalsAllocation)}</Text>
+          <Text style={typography.caption}>
+            Cada quincena este monto se acumulará automáticamente en tu meta del mes.
+          </Text>
+        </Card>
+      </Animated.View>
 
       <PrimaryButton label="Guardar y continuar" onPress={handleSave} loading={loading} />
     </Screen>

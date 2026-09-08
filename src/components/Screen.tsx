@@ -9,18 +9,22 @@ interface ScreenProps extends PropsWithChildren {
   style?: StyleProp<ViewStyle>;
 }
 
+// maxWidth centra el contenido en pantallas anchas (tablet, web de
+// escritorio) en vez de estirar tarjetas y texto de borde a borde.
 export function Screen({ children, scroll = true, style }: ScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       {scroll ? (
         <ScrollView
-          contentContainerStyle={[styles.content, style]}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {children}
+          <View style={[styles.content, style]}>{children}</View>
         </ScrollView>
       ) : (
-        <View style={[styles.content, styles.flex, style]}>{children}</View>
+        <View style={styles.centerWrap}>
+          <View style={[styles.content, styles.flex, style]}>{children}</View>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -31,7 +35,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  scrollContent: {
+    alignItems: "center",
+  },
+  centerWrap: {
+    flex: 1,
+    alignItems: "center",
+  },
   content: {
+    width: "100%",
+    maxWidth: 480,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
     gap: spacing.lg,

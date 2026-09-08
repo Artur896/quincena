@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { Card, EmptyState, MoneyText, PrimaryButton, Screen, SectionHeader } from "@/components";
 import { useAppStore } from "@/store/useAppStore";
@@ -39,14 +40,16 @@ export function ExpensesScreen() {
         <Text style={[typography.body, styles.subtitle]}>Registra lo que gastas fuera de tus metas.</Text>
       </View>
 
-      <Card elevated>
-        <Text style={typography.caption}>Gastado hoy</Text>
-        <MoneyText amount={todayExpensesTotal} variant="display" color={colors.danger} />
-      </Card>
+      <Animated.View entering={FadeInDown.delay(40).duration(400)}>
+        <Card elevated>
+          <Text style={typography.caption}>Gastado hoy</Text>
+          <MoneyText amount={todayExpensesTotal} variant="display" color={colors.danger} />
+        </Card>
+      </Animated.View>
 
       <PrimaryButton label="Registrar gasto" onPress={() => setModalVisible(true)} />
 
-      <View>
+      <Animated.View entering={FadeInDown.delay(100).duration(400)}>
         <SectionHeader title="Historial" />
         {expenses.length === 0 ? (
           <EmptyState
@@ -57,8 +60,9 @@ export function ExpensesScreen() {
         ) : (
           <Card>
             {expenses.map((expense, index) => (
-              <View
+              <Animated.View
                 key={expense.id}
+                entering={FadeInDown.duration(300)}
                 style={[styles.row, index === 0 && styles.rowFirst]}
               >
                 <View style={styles.rowTexts}>
@@ -70,11 +74,11 @@ export function ExpensesScreen() {
                   </Text>
                 </View>
                 <MoneyText amount={expense.amount} variant="body" color={colors.danger} />
-              </View>
+              </Animated.View>
             ))}
           </Card>
         )}
-      </View>
+      </Animated.View>
 
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalBackdrop}>
@@ -163,8 +167,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "flex-end",
+    alignItems: "center",
   },
   modalCard: {
+    width: "100%",
+    maxWidth: 480,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,

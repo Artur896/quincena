@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import Animated, {
   Easing,
   interpolate,
@@ -15,6 +15,7 @@ import type { GoalCategory } from "@/types";
 
 interface RouletteWheelProps {
   categories: GoalCategory[];
+  /** Diámetro fijo en px. Si se omite, se calcula a partir del ancho de pantalla. */
   size?: number;
   /** Ángulo final absoluto (en grados) al que debe girar la ruleta. `null` = reposo. */
   targetAngle: number | null;
@@ -39,15 +40,19 @@ function describeSegment(cx: number, cy: number, r: number, startAngle: number, 
 
 export function RouletteWheel({
   categories,
-  size = 280,
+  size,
   targetAngle,
   onSpinEnd,
   resultColor,
 }: RouletteWheelProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  // Clamp entre 220 y 300: cabe en pantallas angostas y no se ve minúscula
+  // en el contenedor de 480px máx. de Screen en pantallas anchas/web.
+  const resolvedSize = size ?? Math.min(300, Math.max(220, windowWidth - 96));
   const rotation = useSharedValue(0);
   const burst = useSharedValue(0);
   const segmentAngle = 360 / categories.length;
-  const radius = size / 2;
+  const radius = resolvedSize / 2;
   const labelRadius = radius * 0.62;
   const burstColor = resultColor ?? colors.accent;
 
@@ -83,10 +88,10 @@ export function RouletteWheel({
   }));
 
   return (
-    <View style={[styles.wrapper, { width: size, height: size + 20 }]}>
+    <View style={[styles.wrapper, { width: resolvedSize, height: resolvedSize + 20 }]}>
       <View style={styles.pointer} />
-      <Animated.View style={[{ width: size, height: size }, animatedStyle]}>
-        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <Animated.View style={[{ width: resolvedSize, height: resolvedSize }, animatedStyle]}>
+        <Svg width={resolvedSize} height={resolvedSize} viewBox={`0 0 ${resolvedSize} ${resolvedSize}`}>
           <G>
             {categories.map((category, index) => {
               const startAngle = index * segmentAngle;
@@ -121,7 +126,7 @@ export function RouletteWheel({
         </Svg>
       </Animated.View>
 
-      <View pointerEvents="none" style={[styles.burstOverlay, { width: size, height: size }]}>
+      <View pointerEvents="none" style={[styles.burstOverlay, { width: resolvedSize, height: resolvedSize }]}>
         <Animated.View style={[styles.pulse, { backgroundColor: burstColor }, pulseStyle]} />
         {sparkAngles.map((angleDeg) => (
           <Spark

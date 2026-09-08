@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { Card, CategoryPill, EmptyState, MoneyText, ProgressBar, Screen, SectionHeader } from "@/components";
 import { getCategoryById } from "@/constants/categories";
@@ -50,30 +51,34 @@ export function GoalScreen() {
         <CategoryPill category={category} />
       </View>
 
-      <Card elevated style={styles.progressCard}>
-        <Text style={typography.caption}>Acumulado en {monthLabel(activeGoal.month)}</Text>
-        <MoneyText amount={activeGoal.accumulatedAmount} variant="display" />
-        <Text style={typography.caption}>Meta total: {formatMoney(activeGoal.targetAmount)}</Text>
-        <ProgressBar percentage={percentage} color={category.color} />
-        <Text style={[typography.caption, styles.percentage]}>{Math.round(percentage)}% completado</Text>
-      </Card>
+      <Animated.View entering={FadeInDown.delay(40).duration(400)}>
+        <Card elevated style={styles.progressCard}>
+          <Text style={typography.caption}>Acumulado en {monthLabel(activeGoal.month)}</Text>
+          <MoneyText amount={activeGoal.accumulatedAmount} variant="display" />
+          <Text style={typography.caption}>Meta total: {formatMoney(activeGoal.targetAmount)}</Text>
+          <ProgressBar percentage={percentage} color={category.color} />
+          <Text style={[typography.caption, styles.percentage]}>{Math.round(percentage)}% completado</Text>
+        </Card>
+      </Animated.View>
 
-      <Card>
-        <Text style={typography.caption}>Fecha estimada para completar la meta</Text>
-        <Text style={typography.subtitle}>
-          {estimatedCompletion
-            ? estimatedCompletion.toLocaleDateString("es-MX", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })
-            : activeGoal.accumulatedAmount >= activeGoal.targetAmount
-              ? "¡Meta completada!"
-              : "Configura tu ingreso para calcularla"}
-        </Text>
-      </Card>
+      <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+        <Card>
+          <Text style={typography.caption}>Fecha estimada para completar la meta</Text>
+          <Text style={typography.subtitle}>
+            {estimatedCompletion
+              ? estimatedCompletion.toLocaleDateString("es-MX", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : activeGoal.accumulatedAmount >= activeGoal.targetAmount
+                ? "¡Meta completada!"
+                : "Configura tu ingreso para calcularla"}
+          </Text>
+        </Card>
+      </Animated.View>
 
-      <View>
+      <Animated.View entering={FadeInDown.delay(160).duration(400)}>
         <SectionHeader title="Historial mensual" />
         {monthlyHistory.length === 0 ? (
           <EmptyState
@@ -94,10 +99,10 @@ export function GoalScreen() {
             ))}
           </Card>
         )}
-      </View>
+      </Animated.View>
 
       {goalHistory.length > 0 ? (
-        <View>
+        <Animated.View entering={FadeInDown.delay(220).duration(400)}>
           <SectionHeader title="Metas anteriores" />
           <Card>
             {goalHistory
@@ -120,7 +125,7 @@ export function GoalScreen() {
                 );
               })}
           </Card>
-        </View>
+        </Animated.View>
       ) : null}
     </Screen>
   );

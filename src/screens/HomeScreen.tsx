@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import {
   Card,
@@ -32,32 +33,34 @@ export function HomeScreen() {
         <Text style={typography.display}>Tu enfoque de hoy</Text>
       </View>
 
-      <Card elevated style={styles.goalCard}>
-        {currentGoal && currentCategory ? (
-          <>
-            <View style={styles.goalHeader}>
-              <CategoryPill category={currentCategory} />
-              <Text style={typography.caption}>Meta del mes</Text>
-            </View>
-            <MoneyText amount={currentGoal.accumulatedAmount} variant="display" />
-            <Text style={typography.caption}>
-              de {formatMoney(currentGoal.targetAmount)} objetivo
-            </Text>
-            <ProgressBar
-              percentage={progressPercentage(currentGoal.accumulatedAmount, currentGoal.targetAmount)}
-              color={currentCategory.color}
+      <Animated.View entering={FadeInDown.delay(40).duration(400)}>
+        <Card elevated style={styles.goalCard}>
+          {currentGoal && currentCategory ? (
+            <>
+              <View style={styles.goalHeader}>
+                <CategoryPill category={currentCategory} />
+                <Text style={typography.caption}>Meta del mes</Text>
+              </View>
+              <MoneyText amount={currentGoal.accumulatedAmount} variant="display" />
+              <Text style={typography.caption}>
+                de {formatMoney(currentGoal.targetAmount)} objetivo
+              </Text>
+              <ProgressBar
+                percentage={progressPercentage(currentGoal.accumulatedAmount, currentGoal.targetAmount)}
+                color={currentCategory.color}
+              />
+            </>
+          ) : (
+            <EmptyState
+              icon="sync-outline"
+              title="Aún no giras la ruleta este mes"
+              description="Ve a la pestaña Ruleta para comprometerte con una meta."
             />
-          </>
-        ) : (
-          <EmptyState
-            icon="sync-outline"
-            title="Aún no giras la ruleta este mes"
-            description="Ve a la pestaña Ruleta para comprometerte con una meta."
-          />
-        )}
-      </Card>
+          )}
+        </Card>
+      </Animated.View>
 
-      <View style={styles.statsRow}>
+      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
         <Card style={styles.statCard}>
           <Text style={typography.caption}>Dinero libre</Text>
           <MoneyText amount={summary.freeMoney} variant="title" />
@@ -66,9 +69,9 @@ export function HomeScreen() {
           <Text style={typography.caption}>Gastos de hoy</Text>
           <MoneyText amount={summary.todayExpenses} variant="title" color={colors.danger} />
         </Card>
-      </View>
+      </Animated.View>
 
-      <View>
+      <Animated.View entering={FadeInDown.delay(160).duration(400)}>
         <SectionHeader title="Movimientos recientes" />
         {summary.recentMovements.length === 0 ? (
           <EmptyState
@@ -81,7 +84,7 @@ export function HomeScreen() {
             <MovementRow key={`${movement.type}-${movement.id}`} movement={movement} />
           ))
         )}
-      </View>
+      </Animated.View>
     </Screen>
   );
 }
