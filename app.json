@@ -22,6 +22,14 @@
         "backgroundColor": "#0B0B0C"
       }
     },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#E8C468"
+        }
+      ]
+    ],
     "extra": {
       "supabaseUrl": "SUPABASE_URL_PLACEHOLDER",
       "supabaseAnonKey": "SUPABASE_ANON_KEY_PLACEHOLDER"

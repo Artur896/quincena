@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { RootNavigator } from "@/navigation/RootNavigator";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { OnboardingScreen } from "@/screens/OnboardingScreen";
+import { setupDailyExpenseReminder } from "@/services/notificationsService";
 import { useAppStore } from "@/store/useAppStore";
 import { colors } from "@/theme";
 import { fontsToLoad } from "@/theme/fonts";
@@ -38,6 +39,12 @@ export default function App() {
       void initialize(userId);
     }
   }, [userId, initialize]);
+
+  useEffect(() => {
+    if (userId && hasSavedIncomeConfig) {
+      void setupDailyExpenseReminder();
+    }
+  }, [userId, hasSavedIncomeConfig]);
 
   if (!fontsLoaded) {
     return <Loading />;
