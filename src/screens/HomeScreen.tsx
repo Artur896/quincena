@@ -17,6 +17,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import {
   Card,
   CategoryPill,
+  EditIncomeModal,
   EmptyState,
   ErrorBanner,
   MoneyText,
@@ -65,6 +66,7 @@ export function HomeScreen() {
   );
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [editIncomeVisible, setEditIncomeVisible] = useState(false);
   const [amount, setAmount] = useState("");
   const [location, setLocation] = useState(LOCATION_OPTIONS[0]);
   const [customLocation, setCustomLocation] = useState("");
@@ -125,9 +127,18 @@ export function HomeScreen() {
 
   return (
     <Screen>
-      <View style={styles.greetingBlock}>
-        <Text style={typography.caption}>{greeting()}</Text>
-        <Text style={typography.display}>Tu enfoque de hoy</Text>
+      <View style={styles.header}>
+        <View style={styles.greetingBlock}>
+          <Text style={typography.caption}>{greeting()}</Text>
+          <Text style={typography.display}>Tu enfoque de hoy</Text>
+        </View>
+        <Pressable
+          onPress={() => setEditIncomeVisible(true)}
+          style={styles.settingsButton}
+          hitSlop={8}
+        >
+          <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
+        </Pressable>
       </View>
 
       <Animated.View entering={FadeInDown.delay(40).duration(400)}>
@@ -292,6 +303,8 @@ export function HomeScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <EditIncomeModal visible={editIncomeVisible} onClose={() => setEditIncomeVisible(false)} />
     </Screen>
   );
 }
@@ -300,8 +313,16 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
   greetingBlock: {
     gap: 4,
+  },
+  settingsButton: {
+    padding: spacing.xs,
   },
   goalCard: {
     gap: spacing.sm,

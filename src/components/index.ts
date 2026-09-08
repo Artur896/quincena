@@ -1,5 +1,6 @@
 export * from "./Card";
 export * from "./CategoryPill";
+export * from "./EditIncomeModal";
 export * from "./EmptyState";
 export * from "./ErrorBanner";
 export * from "./MoneyText";
