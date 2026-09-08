@@ -23,9 +23,9 @@ export function currentQuincena(): Quincena {
   return quincenaOf(new Date());
 }
 
-/** La ruleta solo puede girarse los primeros días del mes (día 1 al 3). */
+/** La ruleta solo puede girarse los primeros días del mes (día 1 al 9). */
 export function isRouletteWindowOpen(date: Date = new Date()): boolean {
-  return date.getDate() <= 3;
+  return date.getDate() <= 9;
 }
 
 const MONTH_NAMES = [

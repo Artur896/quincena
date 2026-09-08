@@ -197,7 +197,7 @@ de animar (`spinRoulette()` en el store ya escribió en la base de datos);
 la animación es una confirmación visual del resultado, no una lotería en
 el cliente — así no hay forma de que la UI "mienta" sobre qué meta tocó.
 
-La ruleta solo se puede girar del día 1 al 3 del mes
+La ruleta solo se puede girar del día 1 al 9 del mes
 (`isRouletteWindowOpen`), y la restricción real de "una vez al mes" vive en
 la base de datos (`roulette_spins` único por usuario/mes), no solo en la UI.
 

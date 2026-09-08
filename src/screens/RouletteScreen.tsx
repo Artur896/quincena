@@ -75,7 +75,7 @@ export function RouletteScreen() {
 
       {!alreadySpun && !windowOpen ? (
         <Text style={styles.notice}>
-          La ruleta se abre del día 1 al 3 de cada mes. Vuelve pronto.
+          La ruleta se abre del día 1 al 9 de cada mes. Vuelve pronto.
         </Text>
       ) : null}
 
