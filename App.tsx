@@ -14,6 +14,7 @@ import { setupDailyExpenseReminder } from "@/services/notificationsService";
 import { useAppStore } from "@/store/useAppStore";
 import { colors } from "@/theme";
 import { fontsToLoad } from "@/theme/fonts";
+import { currentMonthKey, isRouletteWindowOpen } from "@/utils/date";
 
 const navigationTheme = {
   ...DarkTheme,
@@ -33,6 +34,7 @@ export default function App() {
   const initialize = useAppStore((state) => state.initialize);
   const hasSavedIncomeConfig = useAppStore((state) => state.hasSavedIncomeConfig);
   const hasInitialized = useAppStore((state) => state.hasInitialized);
+  const activeGoal = useAppStore((state) => state.activeGoal);
 
   useEffect(() => {
     if (userId) {
@@ -64,7 +66,13 @@ export default function App() {
           ) : !hasSavedIncomeConfig ? (
             <OnboardingScreen />
           ) : (
-            <RootNavigator />
+            <RootNavigator
+              initialRouteName={
+                (!activeGoal || activeGoal.month !== currentMonthKey()) && isRouletteWindowOpen()
+                  ? "Ruleta"
+                  : "Inicio"
+              }
+            />
           )}
         </NavigationContainer>
       </SafeAreaProvider>

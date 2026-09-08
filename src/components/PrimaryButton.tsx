@@ -10,6 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { colors, radius, spacing, typography } from "@/theme";
+import { tapHaptic } from "@/utils/haptics";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -57,6 +58,7 @@ export function PrimaryButton({
 
   function handlePressIn() {
     scale.value = withTiming(0.96, { duration: 110, easing: Easing.out(Easing.quad) });
+    tapHaptic();
   }
 
   function handlePressOut() {

@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { colors, radius, spacing, typography } from "@/theme";
+import { selectionHaptic } from "@/utils/haptics";
 import { AdvisorScreen } from "@/screens/AdvisorScreen";
 import { ExpensesScreen } from "@/screens/ExpensesScreen";
 import { GoalScreen } from "@/screens/GoalScreen";
@@ -31,9 +32,17 @@ const TAB_ICONS: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> 
   Asesor: "sparkles",
 };
 
-export function RootNavigator() {
+interface RootNavigatorProps {
+  /** Pestaña con la que arranca la sesión. Útil para aterrizar directo en
+   * Ruleta cuando el mes todavía no tiene meta, en vez de dejar al usuario
+   * en Inicio viendo un estado vacío que lo manda a buscar la pestaña. */
+  initialRouteName?: keyof RootTabParamList;
+}
+
+export function RootNavigator({ initialRouteName }: RootNavigatorProps) {
   return (
     <Tab.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={{ headerShown: false }}
       tabBar={(props) => <AnimatedTabBar {...props} />}
     >
@@ -92,6 +101,7 @@ function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
             canPreventDefault: true,
           });
           if (!isFocused && !event.defaultPrevented) {
+            selectionHaptic();
             navigation.navigate(route.name);
           }
         }
