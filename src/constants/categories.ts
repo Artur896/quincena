@@ -2,8 +2,12 @@ import { colors } from "@/theme";
 import type { GoalCategory } from "@/types";
 
 /**
- * Las 4 categorías de la ruleta. El peso determina la probabilidad relativa
- * de salir sorteada: a mayor prioridad, mayor peso (ver src/utils/roulette.ts).
+ * Las 4 categorías de fábrica (globales, user_id null en goal_categories).
+ * El peso determina la probabilidad relativa de salir sorteada: a mayor
+ * prioridad, mayor peso (ver src/utils/roulette.ts). Sirven como fallback
+ * antes de que el store cargue las categorías reales desde Supabase (que
+ * incluyen también las que el usuario haya agregado — ver
+ * src/services/categoriesService.ts).
  */
 export const GOAL_CATEGORIES: GoalCategory[] = [
   {
@@ -15,6 +19,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     icon: "home",
     description: "Construcción y patrimonio",
     weight: 40,
+    userId: null,
   },
   {
     id: "viajes",
@@ -25,6 +30,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     icon: "airplane",
     description: "Vacaciones o experiencias importantes",
     weight: 30,
+    userId: null,
   },
   {
     id: "compu",
@@ -35,6 +41,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     icon: "laptop",
     description: "Computadora, periféricos o tecnología",
     weight: 20,
+    userId: null,
   },
   {
     id: "ropa",
@@ -45,8 +52,44 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     icon: "shirt",
     description: "Vestimenta y accesorios",
     weight: 10,
+    userId: null,
   },
 ];
+
+/** Paleta para categorías personalizadas, sin repetir los 4 colores de fábrica. */
+export const CUSTOM_CATEGORY_COLORS = [
+  "#5FBF8F",
+  "#E8C468",
+  "#7FB2E8",
+  "#C97FE8",
+  "#E8977F",
+  "#7FE8D0",
+  "#E8E07F",
+  "#B0B7C6",
+] as const;
+
+/** Íconos disponibles para elegir al crear una categoría propia. */
+export const CUSTOM_CATEGORY_ICONS = [
+  "home",
+  "airplane",
+  "laptop",
+  "shirt",
+  "car",
+  "school",
+  "medkit",
+  "gift",
+  "restaurant",
+  "bicycle",
+  "phone-portrait",
+  "briefcase",
+] as const;
+
+export const CATEGORY_PRIORITY_WEIGHTS: Record<GoalCategory["priority"], number> = {
+  maxima: 40,
+  alta: 30,
+  media: 20,
+  baja: 10,
+};
 
 export function getCategoryById(id: string): GoalCategory | undefined {
   return GOAL_CATEGORIES.find((category) => category.id === id);

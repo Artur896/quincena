@@ -56,13 +56,25 @@ create table if not exists public.goal_categories (
   color text not null,
   icon text not null,
   description text not null,
-  weight numeric(5, 2) not null check (weight > 0)
+  weight numeric(5, 2) not null check (weight > 0),
+  -- null = categoría global (las 4 de fábrica); no-null = categoría que un
+  -- usuario agregó a SU propia ruleta, invisible para los demás.
+  user_id uuid references public.profiles (id) on delete cascade
 );
+
+alter table public.goal_categories add column if not exists user_id uuid references public.profiles (id) on delete cascade;
 
 alter table public.goal_categories enable row level security;
 
-create policy "goal_categories_select_all" on public.goal_categories
-  for select using (auth.role() = 'authenticated');
+drop policy if exists "goal_categories_select_all" on public.goal_categories;
+create policy "goal_categories_select_own_and_global" on public.goal_categories
+  for select using (auth.role() = 'authenticated' and (user_id is null or user_id = auth.uid()));
+
+create policy "goal_categories_insert_own" on public.goal_categories
+  for insert with check (auth.uid() = user_id);
+
+create policy "goal_categories_delete_own" on public.goal_categories
+  for delete using (auth.uid() = user_id);
 
 -- -----------------------------------------------------------------------------
 -- income_configs: ingreso quincenal y su desglose (transporte, metas, libre).

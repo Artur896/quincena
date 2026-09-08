@@ -1,4 +1,7 @@
-export type CategoryId = "casa" | "viajes" | "compu" | "ropa";
+// Antes era una unión cerrada de las 4 categorías de fábrica; ahora el
+// usuario puede agregar categorías propias (goal_categories.user_id no
+// nulo), así que cualquier string identifica una categoría válida.
+export type CategoryId = string;
 
 export type CategoryPriority = "maxima" | "alta" | "media" | "baja";
 
@@ -12,6 +15,8 @@ export interface GoalCategory {
   description: string;
   /** Peso relativo dentro de la ruleta ponderada. Mayor prioridad -> mayor peso. */
   weight: number;
+  /** null = categoría global de fábrica; si no, el uid del dueño. */
+  userId: string | null;
 }
 
 export type GoalStatus = "active" | "completed" | "archived";

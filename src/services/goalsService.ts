@@ -1,4 +1,3 @@
-import { getCategoryById } from "@/constants/categories";
 import { supabase } from "@/lib/supabase";
 import type { CategoryId, Contribution, Goal, Quincena } from "@/types";
 import { mapContribution, mapGoal } from "./mappers";
@@ -67,18 +66,16 @@ export async function getAllContributions(userId: string): Promise<Contribution[
 export async function createGoalFromRoulette(
   userId: string,
   categoryId: CategoryId,
+  targetAmount: number,
   month: string,
 ): Promise<Goal> {
-  const category = getCategoryById(categoryId);
-  if (!category) throw new Error(`Categoría desconocida: ${categoryId}`);
-
   const { data, error } = await supabase
     .from("goals")
     .insert({
       user_id: userId,
       category_id: categoryId,
       month,
-      target_amount: category.defaultTarget,
+      target_amount: targetAmount,
       status: "active",
     })
     .select("*")

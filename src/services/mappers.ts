@@ -1,4 +1,4 @@
-import type { Contribution, Expense, Goal, IncomeConfig, RouletteSpin } from "@/types";
+import type { Contribution, Expense, Goal, GoalCategory, IncomeConfig, RouletteSpin } from "@/types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Los mappers traducen filas snake_case de Postgres a los tipos camelCase
@@ -52,6 +52,20 @@ export function mapIncomeConfig(row: any): IncomeConfig {
     goalsAllocation: Number(row.goals_allocation),
     freeMoney: Number(row.free_money),
     updatedAt: row.updated_at,
+  };
+}
+
+export function mapGoalCategory(row: any): GoalCategory {
+  return {
+    id: row.id,
+    name: row.name,
+    priority: row.priority,
+    defaultTarget: Number(row.default_target),
+    color: row.color,
+    icon: row.icon,
+    description: row.description,
+    weight: Number(row.weight),
+    userId: row.user_id ?? null,
   };
 }
 

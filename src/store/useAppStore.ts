@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
-import { getCategoryById } from "@/constants/categories";
+import { GOAL_CATEGORIES } from "@/constants/categories";
+import { createCustomCategory, getCategories, type CreateCategoryInput } from "@/services/categoriesService";
 import {
   contributeToGoal,
   createGoalFromRoulette,
@@ -26,6 +27,7 @@ interface AppState {
   userId: string | null;
   incomeConfig: IncomeConfig | null;
   hasSavedIncomeConfig: boolean;
+  categories: GoalCategory[];
   activeGoal: Goal | null;
   goalHistory: Goal[];
   contributions: Contribution[];
@@ -43,6 +45,7 @@ interface AppState {
     freeMoney: number;
   }) => Promise<void>;
   spinRoulette: () => Promise<GoalCategory>;
+  addCategory: (input: Omit<CreateCategoryInput, "userId">) => Promise<GoalCategory>;
   confirmContribution: (input: {
     amount: number;
     photoUrl?: string | null;
@@ -61,6 +64,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   userId: null,
   incomeConfig: null,
   hasSavedIncomeConfig: false,
+  categories: GOAL_CATEGORIES,
   activeGoal: null,
   goalHistory: [],
   contributions: [],
@@ -74,9 +78,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   initialize: async (userId: string) => {
     set({ isLoading: true, error: null, userId });
     try {
-      const [incomeConfig, activeGoal, goalHistory, expenses, todayExpensesTotal, spins] =
+      const [incomeConfig, categories, activeGoal, goalHistory, expenses, todayExpensesTotal, spins] =
         await Promise.all([
           getIncomeConfig(userId),
+          getCategories(),
           getActiveGoal(userId),
           getGoalHistory(userId),
           getExpenses(userId),
@@ -89,6 +94,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({
         incomeConfig: incomeConfig ?? defaultIncomeConfig(userId),
         hasSavedIncomeConfig: Boolean(incomeConfig),
+        categories: categories.length > 0 ? categories : GOAL_CATEGORIES,
         activeGoal,
         goalHistory,
         contributions,
@@ -111,7 +117,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   spinRoulette: async () => {
-    const { userId } = get();
+    const { userId, categories } = get();
     if (!userId) throw new Error("No hay usuario activo.");
 
     const month = currentMonthKey();
@@ -120,9 +126,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       throw new Error("Ya giraste la ruleta este mes.");
     }
 
-    const category = pickWeightedCategory();
+    const category = pickWeightedCategory(categories);
     const spin = await recordSpin(userId, month, category.id);
-    const goal = await createGoalFromRoulette(userId, category.id, month);
+    const goal = await createGoalFromRoulette(userId, category.id, category.defaultTarget, month);
 
     set((state) => ({
       activeGoal: goal,
@@ -130,6 +136,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       spins: [spin, ...state.spins],
     }));
 
+    return category;
+  },
+
+  addCategory: async (input) => {
+    const { userId } = get();
+    if (!userId) throw new Error("No hay usuario activo.");
+
+    const category = await createCustomCategory({ userId, ...input });
+    set((state) => ({ categories: [...state.categories, category] }));
     return category;
   },
 
@@ -194,5 +209,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 export function activeGoalCategory(state: AppState): GoalCategory | null {
   if (!state.activeGoal) return null;
-  return getCategoryById(state.activeGoal.categoryId) ?? null;
+  return state.categories.find((category) => category.id === state.activeGoal?.categoryId) ?? null;
+}
+
+export function findCategoryById(state: AppState, categoryId: string): GoalCategory | null {
+  return state.categories.find((category) => category.id === categoryId) ?? null;
 }

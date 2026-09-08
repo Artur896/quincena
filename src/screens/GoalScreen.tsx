@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { Card, CategoryPill, EmptyState, MoneyText, ProgressBar, Screen, SectionHeader } from "@/components";
-import { getCategoryById } from "@/constants/categories";
 import { useAppStore } from "@/store/useAppStore";
 import { colors, spacing, typography } from "@/theme";
 import { estimateCompletionDate, groupContributionsByMonth } from "@/utils/accumulation";
@@ -15,8 +14,11 @@ export function GoalScreen() {
   const goalHistory = useAppStore((state) => state.goalHistory);
   const contributions = useAppStore((state) => state.contributions);
   const incomeConfig = useAppStore((state) => state.incomeConfig);
+  const categories = useAppStore((state) => state.categories);
 
-  const category = activeGoal ? getCategoryById(activeGoal.categoryId) : null;
+  const category = activeGoal
+    ? (categories.find((item) => item.id === activeGoal.categoryId) ?? null)
+    : null;
 
   const monthlyHistory = useMemo(() => {
     return Object.entries(groupContributionsByMonth(contributions)).sort((a, b) =>
@@ -108,7 +110,7 @@ export function GoalScreen() {
             {goalHistory
               .filter((goal) => goal.id !== activeGoal.id)
               .map((goal, index) => {
-                const goalCategory = getCategoryById(goal.categoryId);
+                const goalCategory = categories.find((item) => item.id === goal.categoryId);
                 return (
                   <View
                     key={goal.id}
