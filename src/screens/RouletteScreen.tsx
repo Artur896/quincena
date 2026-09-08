@@ -17,6 +17,10 @@ export function RouletteScreen() {
 
   const [angle, setAngle] = useState<number | null>(null);
   const [spinning, setSpinning] = useState(false);
+  // pendingCategory: ya se decidió (y escribió en la base de datos), pero la
+  // rueda todavía está girando. result: solo se llena cuando la animación
+  // termina — así la tarjeta/haptic de resultado nunca se adelanta al giro.
+  const [pendingCategory, setPendingCategory] = useState<GoalCategory | null>(null);
   const [result, setResult] = useState<GoalCategory | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,22 +29,28 @@ export function RouletteScreen() {
   const windowOpen = isRouletteWindowOpen();
 
   const lockedCategory =
-    !result && alreadySpun && activeGoal?.month === month
+    !result && alreadySpun && !pendingCategory && activeGoal?.month === month
       ? getCategoryById(activeGoal.categoryId) ?? null
       : null;
   const displayedResult = result ?? lockedCategory;
 
   async function handleSpin() {
     setError(null);
+    setResult(null);
     setSpinning(true);
     try {
       const category = await spinRoulette();
+      setPendingCategory(category);
       setAngle(angleForCategory(category.id));
-      setResult(category);
     } catch (err) {
       setError((err as Error).message);
       setSpinning(false);
     }
+  }
+
+  function handleSpinEnd() {
+    setSpinning(false);
+    setResult(pendingCategory);
   }
 
   return (
@@ -56,8 +66,8 @@ export function RouletteScreen() {
         <RouletteWheel
           categories={GOAL_CATEGORIES}
           targetAngle={angle}
-          onSpinEnd={() => setSpinning(false)}
-          resultColor={result?.color}
+          onSpinEnd={handleSpinEnd}
+          resultColor={pendingCategory?.color}
         />
       </View>
 
@@ -79,7 +89,7 @@ export function RouletteScreen() {
         </Text>
       ) : null}
 
-      {alreadySpun && !result ? (
+      {alreadySpun && !result && !pendingCategory ? (
         <Text style={styles.notice}>
           Ya giraste este mes. Tu meta está bloqueada hasta el próximo mes.
         </Text>

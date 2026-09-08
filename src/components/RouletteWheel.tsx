@@ -8,9 +8,11 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
-import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, Defs, G, Path, RadialGradient, Stop, Text as SvgText } from "react-native-svg";
 
 import { colors } from "@/theme";
+import { successHaptic } from "@/utils/haptics";
+import { getSegmentLayout } from "@/utils/roulette";
 import type { GoalCategory } from "@/types";
 
 interface RouletteWheelProps {
@@ -38,6 +40,13 @@ function describeSegment(cx: number, cy: number, r: number, startAngle: number, 
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
 }
 
+/** Evita etiquetas de cabeza en la mitad inferior de la rueda: en ese rango
+ * el rotate() de SVG las voltearía 180° respecto a una lectura normal. */
+function readableLabelRotation(midAngle: number): number {
+  const normalized = ((midAngle % 360) + 360) % 360;
+  return normalized > 90 && normalized < 270 ? midAngle + 180 : midAngle;
+}
+
 export function RouletteWheel({
   categories,
   size,
@@ -51,10 +60,11 @@ export function RouletteWheel({
   const resolvedSize = size ?? Math.min(300, Math.max(220, windowWidth - 96));
   const rotation = useSharedValue(0);
   const burst = useSharedValue(0);
-  const segmentAngle = 360 / categories.length;
   const radius = resolvedSize / 2;
-  const labelRadius = radius * 0.62;
+  const labelRadius = radius * 0.64;
   const burstColor = resultColor ?? colors.accent;
+
+  const segments = useMemo(() => getSegmentLayout(categories), [categories]);
 
   const sparkAngles = useMemo(
     () => Array.from({ length: SPARK_COUNT }, (_, i) => (360 / SPARK_COUNT) * i),
@@ -70,6 +80,7 @@ export function RouletteWheel({
       (finished) => {
         if (finished) {
           burst.value = withTiming(1, { duration: 750, easing: Easing.out(Easing.cubic) });
+          successHaptic();
           if (onSpinEnd) {
             onSpinEnd();
           }
@@ -88,22 +99,29 @@ export function RouletteWheel({
   }));
 
   return (
-    <View style={[styles.wrapper, { width: resolvedSize, height: resolvedSize + 20 }]}>
+    <View style={[styles.wrapper, { width: resolvedSize, height: resolvedSize + 24 }]}>
+      <View style={styles.pointerPin} />
       <View style={styles.pointer} />
+
+      <View style={[styles.rim, { width: resolvedSize + 16, height: resolvedSize + 16, borderRadius: (resolvedSize + 16) / 2 }]} />
+
       <Animated.View style={[{ width: resolvedSize, height: resolvedSize }, animatedStyle]}>
         <Svg width={resolvedSize} height={resolvedSize} viewBox={`0 0 ${resolvedSize} ${resolvedSize}`}>
+          <Defs>
+            <RadialGradient id="wheelSheen" cx="35%" cy="26%" r="70%">
+              <Stop offset="0%" stopColor="#FFFFFF" stopOpacity={0.24} />
+              <Stop offset="55%" stopColor="#FFFFFF" stopOpacity={0.06} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
           <G>
-            {categories.map((category, index) => {
-              const startAngle = index * segmentAngle;
-              const endAngle = startAngle + segmentAngle;
-              const midAngle = startAngle + segmentAngle / 2;
+            {segments.map(({ category, startAngle, endAngle, midAngle }) => {
               const label = polarToCartesian(radius, radius, labelRadius, midAngle);
               return (
                 <G key={category.id}>
                   <Path
                     d={describeSegment(radius, radius, radius - 4, startAngle, endAngle)}
                     fill={category.color}
-                    fillOpacity={0.92}
                     stroke={colors.background}
                     strokeWidth={3}
                   />
@@ -111,10 +129,10 @@ export function RouletteWheel({
                     x={label.x}
                     y={label.y}
                     fill={colors.background}
-                    fontSize={13}
+                    fontSize={12}
                     fontWeight="700"
                     textAnchor="middle"
-                    transform={`rotate(${midAngle}, ${label.x}, ${label.y})`}
+                    transform={`rotate(${readableLabelRotation(midAngle)}, ${label.x}, ${label.y})`}
                   >
                     {category.name}
                   </SvgText>
@@ -122,7 +140,11 @@ export function RouletteWheel({
               );
             })}
           </G>
-          <Circle cx={radius} cy={radius} r={radius * 0.14} fill={colors.background} />
+          {/* Brillo global, no por segmento: da profundidad sin romper los colores planos de cada categoría. */}
+          <Circle cx={radius} cy={radius} r={radius - 4} fill="url(#wheelSheen)" />
+          <Circle cx={radius} cy={radius} r={radius - 1} fill="none" stroke={colors.background} strokeWidth={2} />
+          <Circle cx={radius} cy={radius} r={radius * 0.15} fill={colors.surface} stroke={colors.accent} strokeWidth={2} />
+          <Circle cx={radius} cy={radius} r={3} fill={colors.accent} />
         </Svg>
       </Animated.View>
 
@@ -174,6 +196,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
   },
+  rim: {
+    position: "absolute",
+    top: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  pointerPin: {
+    position: "absolute",
+    top: 6,
+    zIndex: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent,
+  },
   pointer: {
     position: "absolute",
     top: -2,
@@ -189,7 +227,7 @@ const styles = StyleSheet.create({
   },
   burstOverlay: {
     position: "absolute",
-    top: 0,
+    top: 4,
     left: 0,
     alignItems: "center",
     justifyContent: "center",
