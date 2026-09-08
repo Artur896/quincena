@@ -1,0 +1,38 @@
+<!--
+  Plantilla para Authentication → Email Templates en el dashboard de Supabase.
+  Úsala tal cual para "Confirm signup" y para "Magic Link" (ambas se disparan
+  desde signInWithOtp según si el correo es nuevo o ya existe — LoginScreen.tsx
+  trata los dos casos igual, así que el mismo texto sirve para ambas).
+
+  Clave: usa {{ .Token }} (código de 6 dígitos), no {{ .ConfirmationURL }}
+  (link), porque la pantalla de login pide el código, no abre un enlace.
+-->
+<div style="background-color:#0B0B0A; padding:48px 16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:420px; margin:0 auto;">
+    <tr>
+      <td style="padding-bottom:32px; text-align:center;">
+        <div style="width:8px; height:8px; border-radius:50%; background-color:#E8C468; margin:0 auto 16px;"></div>
+        <div style="font-size:22px; font-weight:700; color:#F5F5F4; letter-spacing:-0.3px;">Quincena</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color:#171512; border:1px solid #2C2924; border-radius:16px; padding:36px 28px; text-align:center;">
+        <p style="margin:0 0 8px; font-size:13px; font-weight:600; color:#A8A29B; text-transform:uppercase; letter-spacing:1px;">
+          Tu código de acceso
+        </p>
+        <p style="margin:0 0 24px; font-size:38px; font-weight:800; letter-spacing:8px; color:#E8C468; font-family:'SFMono-Regular', Consolas, Menlo, monospace;">
+          {{ .Token }}
+        </p>
+        <p style="margin:0; font-size:14px; line-height:20px; color:#726C63;">
+          Expira en 1 hora. Escríbelo en la app para entrar.<br />
+          Si no lo pediste tú, ignora este correo.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding-top:28px; text-align:center;">
+        <p style="margin:0; font-size:12px; color:#726C63;">Una meta a la vez. Enfoque financiero real.</p>
+      </td>
+    </tr>
+  </table>
+</div>
