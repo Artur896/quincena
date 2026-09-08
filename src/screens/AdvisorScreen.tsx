@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,6 +9,16 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 import { Card, EmptyState, Screen } from "@/components";
 import { askAdvisor } from "@/services/advisorService";
@@ -113,9 +123,7 @@ export function AdvisorScreen() {
                 <Text style={typography.body}>{message.content}</Text>
               </Card>
             ))}
-            {loading ? (
-              <Text style={typography.caption}>Pensando...</Text>
-            ) : null}
+            {loading ? <TypingDots /> : null}
           </View>
         )}
       </Screen>
@@ -135,6 +143,41 @@ export function AdvisorScreen() {
       </View>
     </KeyboardAvoidingView>
   );
+}
+
+function TypingDots() {
+  return (
+    <View style={styles.typingRow}>
+      <TypingDot delay={0} />
+      <TypingDot delay={150} />
+      <TypingDot delay={300} />
+    </View>
+  );
+}
+
+function TypingDot({ delay }: { delay: number }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 350, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: 350, easing: Easing.in(Easing.quad) }),
+        ),
+        -1,
+        false,
+      ),
+    );
+  }, [delay, progress]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 1], [0.3, 1]),
+    transform: [{ translateY: interpolate(progress.value, [0, 1], [0, -3]) }],
+  }));
+
+  return <Animated.View style={[styles.typingDot, style]} />;
 }
 
 const styles = StyleSheet.create({
@@ -172,6 +215,18 @@ const styles = StyleSheet.create({
   },
   assistantMessage: {
     alignSelf: "flex-start",
+  },
+  typingRow: {
+    flexDirection: "row",
+    gap: 4,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.textTertiary,
   },
   inputBar: {
     flexDirection: "row",

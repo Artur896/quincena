@@ -1,6 +1,17 @@
+import { useEffect } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 import { colors, radius, spacing, typography } from "@/theme";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface PrimaryButtonProps {
   label: string;
@@ -18,16 +29,49 @@ export function PrimaryButton({
   variant = "primary",
 }: PrimaryButtonProps) {
   const isSecondary = variant === "secondary";
+  const isInactive = disabled || loading;
+  const scale = useSharedValue(1);
+  const glow = useSharedValue(0.25);
+
+  useEffect(() => {
+    if (isSecondary || isInactive) {
+      glow.value = withTiming(0.25, { duration: 300 });
+      return;
+    }
+    glow.value = withRepeat(
+      withSequence(
+        withTiming(0.55, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.25, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      true,
+    );
+  }, [isSecondary, isInactive, glow]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    shadowOpacity: isSecondary ? 0 : glow.value,
+  }));
+
+  function handlePressIn() {
+    scale.value = withTiming(0.96, { duration: 110, easing: Easing.out(Easing.quad) });
+  }
+
+  function handlePressOut() {
+    scale.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.back(1.6)) });
+  }
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      disabled={disabled || loading}
-      style={({ pressed }) => [
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={isInactive}
+      style={[
         styles.base,
         isSecondary ? styles.secondary : styles.primary,
-        (disabled || loading) && styles.disabled,
-        pressed && styles.pressed,
+        isInactive && styles.disabled,
+        animatedStyle,
       ]}
     >
       {loading ? (
@@ -37,7 +81,7 @@ export function PrimaryButton({
           {label}
         </Text>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -50,6 +94,10 @@ const styles = StyleSheet.create({
   },
   primary: {
     backgroundColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 14,
+    elevation: 3,
   },
   secondary: {
     backgroundColor: "transparent",
@@ -58,9 +106,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.4,
-  },
-  pressed: {
-    opacity: 0.85,
   },
   label: {
     ...typography.subtitle,

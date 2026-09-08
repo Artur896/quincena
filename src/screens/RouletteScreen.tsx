@@ -57,6 +57,7 @@ export function RouletteScreen() {
           categories={GOAL_CATEGORIES}
           targetAngle={angle}
           onSpinEnd={() => setSpinning(false)}
+          resultColor={result?.color}
         />
       </View>
 

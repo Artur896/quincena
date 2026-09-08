@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from "react-native-reanimated";
 import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg";
 
@@ -17,7 +19,11 @@ interface RouletteWheelProps {
   /** Ángulo final absoluto (en grados) al que debe girar la ruleta. `null` = reposo. */
   targetAngle: number | null;
   onSpinEnd?: () => void;
+  /** Color de la categoría ganadora, usado en el pulso/chispas al caer el resultado. */
+  resultColor?: string;
 }
+
+const SPARK_COUNT = 8;
 
 function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
   const angleRad = ((angleDeg - 90) * Math.PI) / 180;
@@ -31,27 +37,49 @@ function describeSegment(cx: number, cy: number, r: number, startAngle: number, 
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
 }
 
-export function RouletteWheel({ categories, size = 280, targetAngle, onSpinEnd }: RouletteWheelProps) {
+export function RouletteWheel({
+  categories,
+  size = 280,
+  targetAngle,
+  onSpinEnd,
+  resultColor,
+}: RouletteWheelProps) {
   const rotation = useSharedValue(0);
+  const burst = useSharedValue(0);
   const segmentAngle = 360 / categories.length;
   const radius = size / 2;
   const labelRadius = radius * 0.62;
+  const burstColor = resultColor ?? colors.accent;
+
+  const sparkAngles = useMemo(
+    () => Array.from({ length: SPARK_COUNT }, (_, i) => (360 / SPARK_COUNT) * i),
+    [],
+  );
 
   useEffect(() => {
     if (targetAngle === null) return;
+    burst.value = 0;
     rotation.value = withTiming(
       targetAngle,
       { duration: 4200, easing: Easing.out(Easing.cubic) },
       (finished) => {
-        if (finished && onSpinEnd) {
-          onSpinEnd();
+        if (finished) {
+          burst.value = withTiming(1, { duration: 750, easing: Easing.out(Easing.cubic) });
+          if (onSpinEnd) {
+            onSpinEnd();
+          }
         }
       },
     );
-  }, [targetAngle, onSpinEnd, rotation]);
+  }, [targetAngle, onSpinEnd, rotation, burst]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(burst.value, [0, 0.4, 1], [0.6, 0.35, 0]),
+    transform: [{ scale: interpolate(burst.value, [0, 1], [0.4, 2.4]) }],
   }));
 
   return (
@@ -92,8 +120,48 @@ export function RouletteWheel({ categories, size = 280, targetAngle, onSpinEnd }
           <Circle cx={radius} cy={radius} r={radius * 0.14} fill={colors.background} />
         </Svg>
       </Animated.View>
+
+      <View pointerEvents="none" style={[styles.burstOverlay, { width: size, height: size }]}>
+        <Animated.View style={[styles.pulse, { backgroundColor: burstColor }, pulseStyle]} />
+        {sparkAngles.map((angleDeg) => (
+          <Spark
+            key={angleDeg}
+            burst={burst}
+            angleDeg={angleDeg}
+            distance={radius * 0.55}
+            color={burstColor}
+          />
+        ))}
+      </View>
     </View>
   );
+}
+
+function Spark({
+  burst,
+  angleDeg,
+  distance,
+  color,
+}: {
+  burst: SharedValue<number>;
+  angleDeg: number;
+  distance: number;
+  color: string;
+}) {
+  const style = useAnimatedStyle(() => {
+    const rad = (angleDeg * Math.PI) / 180;
+    const d = interpolate(burst.value, [0, 1], [0, distance]);
+    return {
+      opacity: interpolate(burst.value, [0, 0.15, 1], [0, 1, 0]),
+      transform: [
+        { translateX: Math.cos(rad) * d },
+        { translateY: Math.sin(rad) * d },
+        { scale: interpolate(burst.value, [0, 1], [0.8, 0.1]) },
+      ],
+    };
+  });
+
+  return <Animated.View style={[styles.spark, { backgroundColor: color }, style]} />;
 }
 
 const styles = StyleSheet.create({
@@ -113,5 +181,24 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
     borderTopColor: colors.accent,
+  },
+  burstOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pulse: {
+    position: "absolute",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  spark: {
+    position: "absolute",
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
 });

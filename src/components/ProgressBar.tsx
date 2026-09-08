@@ -1,4 +1,11 @@
+import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import { colors, radius } from "@/theme";
 import { clampPercentage } from "@/utils/money";
@@ -11,15 +18,22 @@ interface ProgressBarProps {
 
 export function ProgressBar({ percentage, color = colors.accent, height = 10 }: ProgressBarProps) {
   const safePercentage = clampPercentage(percentage);
+  const width = useSharedValue(0);
+
+  useEffect(() => {
+    width.value = withTiming(safePercentage, {
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [safePercentage, width]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: `${width.value}%`,
+  }));
 
   return (
     <View style={[styles.track, { height }]}>
-      <View
-        style={[
-          styles.fill,
-          { width: `${safePercentage}%`, backgroundColor: color, height },
-        ]}
-      />
+      <Animated.View style={[styles.fill, { backgroundColor: color, height }, animatedStyle]} />
     </View>
   );
 }
