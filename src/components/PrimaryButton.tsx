@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
+import { useEffect, type ReactNode } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -19,6 +19,7 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   loading?: boolean;
   variant?: "primary" | "secondary";
+  icon?: ReactNode;
 }
 
 export function PrimaryButton({
@@ -27,6 +28,7 @@ export function PrimaryButton({
   disabled,
   loading,
   variant = "primary",
+  icon,
 }: PrimaryButtonProps) {
   const isSecondary = variant === "secondary";
   const isInactive = disabled || loading;
@@ -77,9 +79,12 @@ export function PrimaryButton({
       {loading ? (
         <ActivityIndicator color={isSecondary ? colors.textPrimary : colors.background} />
       ) : (
-        <Text style={[styles.label, isSecondary ? styles.labelSecondary : styles.labelPrimary]}>
-          {label}
-        </Text>
+        <View style={styles.content}>
+          {icon}
+          <Text style={[styles.label, isSecondary ? styles.labelSecondary : styles.labelPrimary]}>
+            {label}
+          </Text>
+        </View>
       )}
     </AnimatedPressable>
   );
@@ -91,6 +96,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     alignItems: "center",
     justifyContent: "center",
+  },
+  content: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   primary: {
     backgroundColor: colors.accent,

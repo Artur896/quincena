@@ -1,6 +1,7 @@
 import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 import { createClient } from "@supabase/supabase-js";
 
 const extra = Constants.expoConfig?.extra ?? {};
@@ -34,7 +35,10 @@ export const supabase = createClient(
       storage: AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      // En web, Supabase intercambia el hash de la URL de vuelta del OAuth
+      // por una sesión automáticamente; en nativo lo hacemos a mano en
+      // authService.signInWithGoogle() vía expo-web-browser.
+      detectSessionInUrl: Platform.OS === "web",
     },
   },
 );

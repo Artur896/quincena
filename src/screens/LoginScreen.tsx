@@ -1,35 +1,20 @@
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { PrimaryButton, Screen } from "@/components";
-import { requestOtp, verifyOtp } from "@/services/authService";
-import { colors, radius, spacing, typography } from "@/theme";
+import { signInWithGoogle } from "@/services/authService";
+import { colors, spacing, typography } from "@/theme";
 
 export function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [step, setStep] = useState<"email" | "code">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleRequestCode() {
+  async function handleGoogleSignIn() {
     setLoading(true);
     setError(null);
     try {
-      await requestOtp(email.trim());
-      setStep("code");
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleVerifyCode() {
-    setLoading(true);
-    setError(null);
-    try {
-      await verifyOtp(email.trim(), code.trim());
+      await signInWithGoogle();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -47,44 +32,12 @@ export function LoginScreen() {
       </View>
 
       <View style={styles.form}>
-        {step === "email" ? (
-          <>
-            <Text style={typography.caption}>Correo</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="tu@correo.com"
-              placeholderTextColor={colors.textTertiary}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              style={styles.input}
-            />
-            <PrimaryButton
-              label="Enviar código"
-              onPress={handleRequestCode}
-              disabled={!email.includes("@")}
-              loading={loading}
-            />
-          </>
-        ) : (
-          <>
-            <Text style={typography.caption}>Código enviado a {email}</Text>
-            <TextInput
-              value={code}
-              onChangeText={setCode}
-              placeholder="123456"
-              placeholderTextColor={colors.textTertiary}
-              keyboardType="number-pad"
-              style={styles.input}
-            />
-            <PrimaryButton
-              label="Entrar"
-              onPress={handleVerifyCode}
-              disabled={code.length < 6}
-              loading={loading}
-            />
-          </>
-        )}
+        <PrimaryButton
+          label="Continuar con Google"
+          onPress={handleGoogleSignIn}
+          loading={loading}
+          icon={<Ionicons name="logo-google" size={18} color={colors.background} />}
+        />
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </View>
     </Screen>
@@ -105,16 +58,9 @@ const styles = StyleSheet.create({
   form: {
     gap: spacing.md,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    ...typography.body,
-  },
   error: {
     ...typography.caption,
     color: colors.danger,
+    textAlign: "center",
   },
 });
