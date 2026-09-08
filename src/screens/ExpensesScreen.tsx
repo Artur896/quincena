@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -10,39 +11,65 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { Card, EmptyState, ErrorBanner, MoneyText, PrimaryButton, Screen, SectionHeader } from "@/components";
+import { uploadExpensePhoto } from "@/services/expensesService";
 import { useAppStore } from "@/store/useAppStore";
 import { colors, radius, spacing, typography } from "@/theme";
 
 const QUICK_CATEGORIES = ["Comida", "Transporte", "Ocio", "Salud", "Otro"];
 
 export function ExpensesScreen() {
+  const userId = useAppStore((state) => state.userId);
   const expenses = useAppStore((state) => state.expenses);
   const todayExpensesTotal = useAppStore((state) => state.todayExpensesTotal);
   const addExpense = useAppStore((state) => state.addExpense);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState("");
   const [category, setCategory] = useState(QUICK_CATEGORIES[0]);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const canSave = Boolean(amount) && title.trim().length > 0;
 
   function openModal() {
     setError(null);
     setModalVisible(true);
   }
 
+  async function pickFromCamera() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) return;
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: true });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  }
+
+  async function pickFromLibrary() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.6, allowsEditing: true });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  }
+
   async function handleSave() {
-    if (!amount) return;
+    if (!canSave || !userId) return;
     setError(null);
     setSaving(true);
     try {
-      await addExpense({ amount: Number(amount), category, description });
+      const photoUrl = photoUri ? await uploadExpensePhoto(userId, photoUri) : null;
+      await addExpense({ amount: Number(amount), category, title: title.trim(), photoUrl });
       setAmount("");
-      setDescription("");
+      setTitle("");
+      setPhotoUri(null);
       setModalVisible(false);
     } catch (err) {
       setError((err as Error).message);
@@ -83,9 +110,12 @@ export function ExpensesScreen() {
                 entering={FadeInDown.duration(300)}
                 style={[styles.row, index === 0 && styles.rowFirst]}
               >
+                {expense.photoUrl ? (
+                  <Image source={{ uri: expense.photoUrl }} style={styles.rowThumbnail} />
+                ) : null}
                 <View style={styles.rowTexts}>
                   <Text style={typography.body} numberOfLines={1}>
-                    {expense.description || expense.category}
+                    {expense.title || expense.category}
                   </Text>
                   <Text style={typography.caption}>
                     {expense.category} · {new Date(expense.date).toLocaleDateString("es-MX")}
@@ -121,9 +151,9 @@ export function ExpensesScreen() {
               </View>
 
               <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Descripción (opcional)"
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Título del gasto"
                 placeholderTextColor={colors.textTertiary}
                 style={styles.input}
               />
@@ -147,6 +177,26 @@ export function ExpensesScreen() {
                 ))}
               </View>
 
+              {photoUri ? (
+                <View style={styles.photoPreviewRow}>
+                  <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+                  <Pressable onPress={() => setPhotoUri(null)} style={styles.photoRemove}>
+                    <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.photoButtons}>
+                  <Pressable onPress={pickFromCamera} style={styles.photoButton}>
+                    <Ionicons name="camera-outline" size={18} color={colors.textSecondary} />
+                    <Text style={typography.caption}>Cámara</Text>
+                  </Pressable>
+                  <Pressable onPress={pickFromLibrary} style={styles.photoButton}>
+                    <Ionicons name="image-outline" size={18} color={colors.textSecondary} />
+                    <Text style={typography.caption}>Galería</Text>
+                  </Pressable>
+                </View>
+              )}
+
               {error ? <ErrorBanner message={error} /> : null}
 
               <View style={styles.modalActions}>
@@ -157,7 +207,7 @@ export function ExpensesScreen() {
                   <PrimaryButton
                     label="Guardar"
                     onPress={handleSave}
-                    disabled={!amount}
+                    disabled={!canSave}
                     loading={saving}
                   />
                 </View>
@@ -182,8 +232,8 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: spacing.sm,
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
@@ -191,10 +241,15 @@ const styles = StyleSheet.create({
   rowFirst: {
     borderTopWidth: 0,
   },
+  rowThumbnail: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceElevated,
+  },
   rowTexts: {
     flex: 1,
     gap: 2,
-    marginRight: spacing.sm,
   },
   modalBackdrop: {
     flex: 1,
@@ -254,6 +309,33 @@ const styles = StyleSheet.create({
   categoryChipActive: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
+  },
+  photoButtons: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  photoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  photoPreviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  photoPreview: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceElevated,
+  },
+  photoRemove: {
+    marginLeft: spacing.sm,
   },
   modalActions: {
     flexDirection: "row",

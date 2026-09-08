@@ -170,11 +170,29 @@ create table if not exists public.expenses (
   user_id uuid not null references public.profiles (id) on delete cascade,
   amount numeric(12, 2) not null check (amount > 0),
   category text not null default 'general',
-  description text not null default '',
+  title text not null default '',
+  photo_url text,
   date date not null default current_date,
   source text not null default 'manual' check (source in ('manual', 'auto')),
   created_at timestamptz not null default now()
 );
+
+-- Migración idempotente para instalaciones que ya tenían la tabla con el
+-- nombre de columna anterior ("description") y sin foto de comprobante.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'expenses' and column_name = 'description'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'expenses' and column_name = 'title'
+  ) then
+    alter table public.expenses rename column description to title;
+  end if;
+end $$;
+
+alter table public.expenses add column if not exists photo_url text;
 
 create index if not exists expenses_user_id_date_idx on public.expenses (user_id, date desc);
 
@@ -201,7 +219,8 @@ create policy "roulette_spins_all_own" on public.roulette_spins
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- -----------------------------------------------------------------------------
--- Storage: bucket para íconos/imágenes de categorías y avatares.
+-- Storage: bucket para íconos/imágenes de categorías, avatares y fotos de
+-- comprobante de gastos (path: {user_id}/expenses/{archivo}).
 -- -----------------------------------------------------------------------------
 insert into storage.buckets (id, name, public)
 values ('quincena-assets', 'quincena-assets', true)

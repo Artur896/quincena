@@ -44,7 +44,12 @@ interface AppState {
   }) => Promise<void>;
   spinRoulette: () => Promise<GoalCategory>;
   contributeCurrentQuincena: () => Promise<void>;
-  addExpense: (input: { amount: number; category: string; description: string }) => Promise<void>;
+  addExpense: (input: {
+    amount: number;
+    category: string;
+    title: string;
+    photoUrl?: string | null;
+  }) => Promise<void>;
   refreshExpenses: () => Promise<void>;
 }
 

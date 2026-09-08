@@ -29,7 +29,7 @@ export function useFinancialSummary(): FinancialSummary {
     const expenseMovements: Movement[] = expenses.map((expense) => ({
       id: expense.id,
       type: "expense" as const,
-      title: expense.description || expense.category,
+      title: expense.title || expense.category,
       subtitle: expense.category,
       amount: -expense.amount,
       date: expense.date,

@@ -45,7 +45,8 @@ export interface Expense {
   userId: string;
   amount: number;
   category: string;
-  description: string;
+  title: string;
+  photoUrl: string | null;
   date: string;
   source: "manual" | "auto";
 }

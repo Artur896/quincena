@@ -35,7 +35,8 @@ export function mapExpense(row: any): Expense {
     userId: row.user_id,
     amount: Number(row.amount),
     category: row.category,
-    description: row.description,
+    title: row.title,
+    photoUrl: row.photo_url ?? null,
     date: row.date,
     source: row.source,
   };
