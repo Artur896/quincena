@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0B0B0C"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.quincena.app"
@@ -34,7 +36,10 @@
     ],
     "extra": {
       "supabaseUrl": "SUPABASE_URL_PLACEHOLDER",
-      "supabaseAnonKey": "SUPABASE_ANON_KEY_PLACEHOLDER"
+      "supabaseAnonKey": "SUPABASE_ANON_KEY_PLACEHOLDER",
+      "eas": {
+        "projectId": "5e347329-7c5d-4121-9dc7-31f0a0d0e0fc"
+      }
     }
   }
 }
