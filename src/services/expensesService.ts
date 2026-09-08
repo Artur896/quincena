@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/types";
 import { mapExpense } from "./mappers";
+import { uploadPhoto } from "./storageService";
 
 export async function getExpenses(userId: string, limit = 50): Promise<Expense[]> {
   const { data, error } = await supabase
@@ -59,23 +60,6 @@ export async function deleteExpense(id: string): Promise<void> {
   if (error) throw error;
 }
 
-/**
- * Sube la foto del comprobante a Storage (bucket público `quincena-assets`,
- * carpeta {userId}/expenses/ — la política RLS de escritura exige que el
- * primer segmento de la ruta sea el uid del usuario) y devuelve su URL
- * pública para guardarla en `expenses.photo_url`.
- */
 export async function uploadExpensePhoto(userId: string, localUri: string): Promise<string> {
-  const response = await fetch(localUri);
-  const blob = await response.blob();
-  const extension = localUri.split(".").pop()?.split("?")[0] || "jpg";
-  const path = `${userId}/expenses/${Date.now()}-${Math.round(Math.random() * 1e6)}.${extension}`;
-
-  const { error } = await supabase.storage.from("quincena-assets").upload(path, blob, {
-    contentType: blob.type || "image/jpeg",
-  });
-  if (error) throw error;
-
-  const { data } = supabase.storage.from("quincena-assets").getPublicUrl(path);
-  return data.publicUrl;
+  return uploadPhoto(userId, localUri, "expenses");
 }

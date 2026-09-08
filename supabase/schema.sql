@@ -117,9 +117,17 @@ create table if not exists public.contributions (
   amount numeric(12, 2) not null check (amount > 0),
   quincena smallint not null check (quincena in (1, 2)),
   month text not null check (month ~ '^\d{4}-\d{2}$'),
+  -- El aporte lo confirma el usuario cada quincena (puede ser menos que lo
+  -- sugerido si no le alcanzó); estos dos campos son el respaldo de ese
+  -- aporte real, no del monto calculado en el onboarding.
+  photo_url text,
+  storage_location text,
   created_at timestamptz not null default now(),
   unique (goal_id, month, quincena)
 );
+
+alter table public.contributions add column if not exists photo_url text;
+alter table public.contributions add column if not exists storage_location text;
 
 create index if not exists contributions_goal_id_idx on public.contributions (goal_id);
 create index if not exists contributions_user_id_idx on public.contributions (user_id);

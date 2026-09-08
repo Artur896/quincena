@@ -37,6 +37,8 @@ export interface Contribution {
   amount: number;
   quincena: Quincena;
   month: string;
+  photoUrl: string | null;
+  storageLocation: string | null;
   createdAt: string;
 }
 

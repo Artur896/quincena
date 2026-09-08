@@ -25,6 +25,8 @@ export function mapContribution(row: any): Contribution {
     amount: Number(row.amount),
     quincena: row.quincena,
     month: row.month,
+    photoUrl: row.photo_url ?? null,
+    storageLocation: row.storage_location ?? null,
     createdAt: row.created_at,
   };
 }

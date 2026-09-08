@@ -203,32 +203,34 @@ la base de datos (`roulette_spins` único por usuario/mes), no solo en la UI.
 
 ## 7. Sistema de acumulación
 
-Cada quincena, el `goalsAllocation` configurado (ej. $3,000) se registra
-como una fila en `contributions`, atada a la meta activa del mes. Un
-trigger de Postgres recalcula `goals.accumulated_amount` como la suma de
-esas filas — el número mostrado en pantalla siempre es una suma auditable
-del historial, nunca un contador que se pueda desincronizar.
+Cada quincena el usuario **confirma manualmente** cuánto logró guardar
+(`useAppStore.confirmContribution`, disparado desde una tarjeta en
+`Inicio` cuando hay un aporte pendiente) — no es un monto forzado. El
+`goalsAllocation` calculado en el onboarding solo aparece como sugerencia
+precargada en el input; el usuario puede confirmar menos si esa quincena
+no le alcanzó. Cada aporte queda como una fila en `contributions`, atada
+a la meta activa del mes, con respaldo opcional (`photo_url`,
+`storage_location` — dónde guardó físicamente ese dinero, para no
+mezclarlo con el gasto diario). Un trigger de Postgres recalcula
+`goals.accumulated_amount` como la suma de esas filas — el número
+mostrado en pantalla siempre es una suma auditable del historial, nunca
+un contador que se pueda desincronizar.
 
 ```
 Septiembre → Viajes
-  Quincena 1  +$3,000  (contribution #1)
-  Quincena 2  +$3,000  (contribution #2)
-  Total septiembre: $6,000  ← suma automática, no un campo editable
+  Quincena 1  +$3,000  (contribution #1, alcancía)
+  Quincena 2  +$2,000  (contribution #2, no alcanzó el monto completo)
+  Total septiembre: $5,000  ← suma automática, no un campo editable
 
 Octubre → Casa
   Quincena 1  +$3,000
-  Quincena 2  +$3,000
 ```
 
-En este MVP, el disparo de "acumula esta quincena" ocurre **al abrir la
-app** dentro de la quincena vigente (`useAppStore.initialize`, ver
-`contributeCurrentQuincena`): si ya existe un aporte para esa quincena, no
-duplica nada (la unicidad la garantiza la base de datos). Esto es
-suficiente para un MVP pero tiene un límite obvio — si el usuario no abre
-la app en 15 días, ese aporte no se registra solo. La v1.0 debería mover
-este trigger a un cron de Supabase (Edge Function programada) que corra el
-1 y el 16 de cada mes sin depender de que el usuario abra la app — ver
-Roadmap.
+Si el aporte confirmado es menor al sugerido, la UI muestra un mensaje de
+ánimo (no un "¡Felicidades!" genérico) reconociendo que igual cuenta.
+Este confirmar-a-mano depende de que el usuario abra la app dentro de la
+quincena vigente; la v1.0 debería agregar una notificación push
+recordando confirmar si no lo ha hecho — ver Roadmap.
 
 `src/utils/accumulation.ts` también resuelve:
 

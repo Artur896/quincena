@@ -2,6 +2,7 @@ import { getCategoryById } from "@/constants/categories";
 import { supabase } from "@/lib/supabase";
 import type { CategoryId, Contribution, Goal, Quincena } from "@/types";
 import { mapContribution, mapGoal } from "./mappers";
+import { uploadPhoto } from "./storageService";
 
 export async function getGoalForMonth(userId: string, month: string): Promise<Goal | null> {
   const { data, error } = await supabase
@@ -90,13 +91,16 @@ export async function createGoalFromRoulette(
 /**
  * Registra el aporte de una quincena a la meta activa del mes. Es idempotente
  * por (goal, mes, quincena): un segundo intento para la misma quincena falla
- * por la restricción única en vez de duplicar el aporte.
+ * por la restricción única en vez de duplicar el aporte. `amount` es lo que
+ * el usuario confirmó realmente, no necesariamente el sugerido por el
+ * onboarding — puede ser menos si esa quincena no le alcanzó.
  */
 export async function contributeToGoal(
   userId: string,
   goal: Goal,
   quincena: Quincena,
   amount: number,
+  extra?: { photoUrl?: string | null; storageLocation?: string | null },
 ): Promise<Contribution> {
   const { data, error } = await supabase
     .from("contributions")
@@ -106,10 +110,16 @@ export async function contributeToGoal(
       amount,
       quincena,
       month: goal.month,
+      photo_url: extra?.photoUrl ?? null,
+      storage_location: extra?.storageLocation ?? null,
     })
     .select("*")
     .single();
 
   if (error) throw error;
   return mapContribution(data);
+}
+
+export async function uploadContributionPhoto(userId: string, localUri: string): Promise<string> {
+  return uploadPhoto(userId, localUri, "contributions");
 }

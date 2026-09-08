@@ -43,7 +43,11 @@ interface AppState {
     freeMoney: number;
   }) => Promise<void>;
   spinRoulette: () => Promise<GoalCategory>;
-  contributeCurrentQuincena: () => Promise<void>;
+  confirmContribution: (input: {
+    amount: number;
+    photoUrl?: string | null;
+    storageLocation?: string | null;
+  }) => Promise<Contribution>;
   addExpense: (input: {
     amount: number;
     category: string;
@@ -70,7 +74,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   initialize: async (userId: string) => {
     set({ isLoading: true, error: null, userId });
     try {
-      const month = currentMonthKey();
       const [incomeConfig, activeGoal, goalHistory, expenses, todayExpensesTotal, spins] =
         await Promise.all([
           getIncomeConfig(userId),
@@ -95,11 +98,6 @@ export const useAppStore = create<AppState>((set, get) => ({
         isLoading: false,
         hasInitialized: true,
       });
-      void month;
-
-      if (activeGoal && incomeConfig && activeGoal.month === month) {
-        await get().contributeCurrentQuincena();
-      }
     } catch (err) {
       set({ isLoading: false, hasInitialized: true, error: (err as Error).message });
     }
@@ -135,10 +133,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     return category;
   },
 
-  contributeCurrentQuincena: async () => {
-    const { userId, activeGoal, incomeConfig, contributions } = get();
-    if (!userId || !activeGoal || !incomeConfig) {
-      throw new Error("Falta configurar ingreso o girar la ruleta este mes.");
+  confirmContribution: async (input) => {
+    const { userId, activeGoal, contributions } = get();
+    if (!userId || !activeGoal) {
+      throw new Error("Falta girar la ruleta este mes antes de poder aportar.");
     }
 
     const quincena = currentQuincena();
@@ -148,14 +146,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         contribution.month === activeGoal.month &&
         contribution.quincena === quincena,
     );
-    if (alreadyContributed) return;
+    if (alreadyContributed) {
+      throw new Error("Ya confirmaste el aporte de esta quincena.");
+    }
 
-    const contribution = await contributeToGoal(
-      userId,
-      activeGoal,
-      quincena,
-      incomeConfig.goalsAllocation,
-    );
+    const contribution = await contributeToGoal(userId, activeGoal, quincena, input.amount, {
+      photoUrl: input.photoUrl ?? null,
+      storageLocation: input.storageLocation ?? null,
+    });
 
     set((state) => ({
       contributions: [...state.contributions, contribution],
@@ -166,6 +164,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           }
         : state.activeGoal,
     }));
+
+    return contribution;
   },
 
   addExpense: async (input) => {
