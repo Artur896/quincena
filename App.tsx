@@ -4,6 +4,7 @@ import { NavigationContainer, DarkTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { useFonts } from "expo-font";
 
 import { useAuth } from "@/hooks/useAuth";
 import { RootNavigator } from "@/navigation/RootNavigator";
@@ -11,6 +12,7 @@ import { LoginScreen } from "@/screens/LoginScreen";
 import { OnboardingScreen } from "@/screens/OnboardingScreen";
 import { useAppStore } from "@/store/useAppStore";
 import { colors } from "@/theme";
+import { fontsToLoad } from "@/theme/fonts";
 
 const navigationTheme = {
   ...DarkTheme,
@@ -25,6 +27,7 @@ const navigationTheme = {
 };
 
 export default function App() {
+  const [fontsLoaded] = useFonts(fontsToLoad);
   const { userId, isLoading: authLoading } = useAuth();
   const initialize = useAppStore((state) => state.initialize);
   const hasSavedIncomeConfig = useAppStore((state) => state.hasSavedIncomeConfig);
@@ -35,6 +38,10 @@ export default function App() {
       void initialize(userId);
     }
   }, [userId, initialize]);
+
+  if (!fontsLoaded) {
+    return <Loading />;
+  }
 
   return (
     <GestureHandlerRootView style={styles.flex}>
