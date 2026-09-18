@@ -2,25 +2,18 @@ import { GOAL_CATEGORIES } from "@/constants/categories";
 import type { CategoryId, GoalCategory } from "@/types";
 
 /**
- * Selecciona una categoría al azar respetando el peso de prioridad de cada
- * una (ruleta ponderada, no equiprobable). `random` es inyectable para
- * pruebas deterministas.
+ * Selecciona una categoría al azar. Todas las categorías tienen la misma
+ * probabilidad sin importar cuántas haya — al agregar una nueva, el resto
+ * se "reparte" automáticamente porque esto se calcula en el momento
+ * (1/N), no contra un peso guardado que haya que rebalancear a mano.
+ * `random` es inyectable para pruebas deterministas.
  */
 export function pickWeightedCategory(
   categories: GoalCategory[] = GOAL_CATEGORIES,
   random: () => number = Math.random,
 ): GoalCategory {
-  const totalWeight = categories.reduce((sum, category) => sum + category.weight, 0);
-  let ticket = random() * totalWeight;
-
-  for (const category of categories) {
-    ticket -= category.weight;
-    if (ticket <= 0) {
-      return category;
-    }
-  }
-
-  return categories[categories.length - 1];
+  const index = Math.floor(random() * categories.length);
+  return categories[Math.min(index, categories.length - 1)];
 }
 
 export interface RouletteSegment {
@@ -31,22 +24,18 @@ export interface RouletteSegment {
 }
 
 /**
- * Calcula el arco (en grados) de cada categoría proporcional a su `weight`,
- * en vez de repartir la circunferencia en partes iguales — así el tamaño
- * visual del segmento sí refleja su probabilidad real de salir sorteado.
- * Único punto de verdad para el layout de la ruleta: lo usan tanto el
- * dibujo (RouletteWheel) como el cálculo del ángulo final (abajo), así
- * nunca pueden desincronizarse.
+ * Calcula el arco (en grados) de cada categoría — todas del mismo tamaño
+ * (360 / cantidad de categorías), reflejando que todas tienen la misma
+ * probabilidad de salir sorteadas. Único punto de verdad para el layout de
+ * la ruleta: lo usan tanto el dibujo (RouletteWheel) como el cálculo del
+ * ángulo final (abajo), así nunca pueden desincronizarse.
  */
 export function getSegmentLayout(categories: GoalCategory[] = GOAL_CATEGORIES): RouletteSegment[] {
-  const totalWeight = categories.reduce((sum, category) => sum + category.weight, 0);
-  let cursor = 0;
+  const sweep = 360 / categories.length;
 
-  return categories.map((category) => {
-    const sweep = (category.weight / totalWeight) * 360;
-    const startAngle = cursor;
-    const endAngle = cursor + sweep;
-    cursor = endAngle;
+  return categories.map((category, index) => {
+    const startAngle = index * sweep;
+    const endAngle = startAngle + sweep;
     return { category, startAngle, endAngle, midAngle: startAngle + sweep / 2 };
   });
 }

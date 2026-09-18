@@ -3,11 +3,13 @@ import type { GoalCategory } from "@/types";
 
 /**
  * Las 4 categorías de fábrica (globales, user_id null en goal_categories).
- * El peso determina la probabilidad relativa de salir sorteada: a mayor
- * prioridad, mayor peso (ver src/utils/roulette.ts). Sirven como fallback
- * antes de que el store cargue las categorías reales desde Supabase (que
- * incluyen también las que el usuario haya agregado — ver
- * src/services/categoriesService.ts).
+ * Todas tienen la misma probabilidad de salir sorteadas sin importar el
+ * `weight`/`priority` guardado — utils/roulette.ts sortea 1/N entre todas
+ * las categorías activas, sean de fábrica o agregadas por el usuario, para
+ * que la probabilidad se reparta sola según cuántas haya en ese momento.
+ * Sirven como fallback antes de que el store cargue las categorías reales
+ * desde Supabase (que incluyen también las que el usuario haya agregado —
+ * ver src/services/categoriesService.ts).
  */
 export const GOAL_CATEGORIES: GoalCategory[] = [
   {
@@ -83,13 +85,6 @@ export const CUSTOM_CATEGORY_ICONS = [
   "phone-portrait",
   "briefcase",
 ] as const;
-
-export const CATEGORY_PRIORITY_WEIGHTS: Record<GoalCategory["priority"], number> = {
-  maxima: 40,
-  alta: 30,
-  media: 20,
-  baja: 10,
-};
 
 export function getCategoryById(id: string): GoalCategory | undefined {
   return GOAL_CATEGORIES.find((category) => category.id === id);

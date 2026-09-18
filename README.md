@@ -1,7 +1,8 @@
 # Quincena
 
 Una app de **enfoque financiero**, no de administración de gastos. Cada mes,
-el usuario gira una ruleta ponderada y se compromete con **una sola meta**.
+el usuario gira una ruleta (equiprobable entre todas las categorías activas)
+y se compromete con **una sola meta**.
 Ese compromiso queda bloqueado 30 días; el dinero de cada quincena se
 acumula ahí solo, y todo el progreso queda en un historial que nunca se
 reinicia.
@@ -53,16 +54,17 @@ Principios de diseño visual, inspirados en Apple Wallet, Notion y Revolut:
 
 ### Categorías de la ruleta
 
-| Categoría | Prioridad | Meta ejemplo | Peso en la ruleta |
-| --------- | --------- | ------------ | ------------------ |
-| Casa      | Máxima    | $50,000      | 40 %                |
-| Viajes    | Alta      | $15,000      | 30 %                |
-| Compu     | Media     | $20,000      | 20 %                |
-| Ropa      | Baja      | $5,000       | 10 %                |
+| Categoría | Meta ejemplo |
+| --------- | ------------ |
+| Casa      | $50,000      |
+| Viajes    | $15,000      |
+| Compu     | $20,000      |
+| Ropa      | $5,000       |
 
-La ruleta **no es equiprobable**: cada categoría tiene un peso proporcional
-a su prioridad (`src/constants/categories.ts`), así que "Casa" sale más
-seguido que "Ropa" sin dejar de ser aleatorio. Ver §6.
+La ruleta **es equiprobable**: todas las categorías activas tienen la misma
+probabilidad de salir, sin importar cuántas haya — al agregar una categoría
+propia desde la pantalla Ruleta, la probabilidad de todas (las 4 de fábrica
+y las que el usuario haya sumado) se reparte sola en 1/N. Ver §6.
 
 ## 3. Arquitectura técnica
 
@@ -182,15 +184,19 @@ Antes de los tabs, `App.tsx` resuelve un gate secuencial:
 
 `src/utils/roulette.ts`:
 
-- `pickWeightedCategory()`: selección ponderada por "boletos" — cada
-  categoría ocupa un rango proporcional a su `weight` dentro de `[0, sumaDePesos)`;
-  se saca un número aleatorio y se ve en qué rango cae. Con los pesos por
-  defecto (40/30/20/10), Casa tiene 4x más probabilidad de salir que Ropa.
+- `pickWeightedCategory()`: elige un índice al azar entre las categorías
+  activas (1/N cada una — `weight`/`priority` ya no se usan para esto, solo
+  quedan en el esquema por compatibilidad). Agregar una categoría propia
+  reparte la probabilidad de todas automáticamente, sin rebalancear nada.
+- `getSegmentLayout()`: reparte los 360° en partes iguales (360/N) — único
+  punto de verdad del layout, lo usa tanto el dibujo de la rueda como el
+  cálculo del ángulo final, así nunca se desincronizan.
 - `angleForCategory()`: calcula el ángulo final (grados) al que debe
   detenerse la aguja para apuntar al centro del segmento ya elegido,
   agregando varias vueltas completas para el efecto visual.
 
-`src/components/RouletteWheel.tsx` dibuja los 4 segmentos con
+`src/components/RouletteWheel.tsx` dibuja los segmentos (4 de fábrica +
+los que el usuario haya agregado) con
 `react-native-svg` y anima la rotación con `react-native-reanimated`
 (`withTiming` + easing de salida, ~4.2s). El resultado se decide **antes**
 de animar (`spinRoulette()` en el store ya escribió en la base de datos);
@@ -304,7 +310,7 @@ Variables de entorno (ver `.env.example`):
 **MVP (este entregable)**
 - [x] Modelo de datos completo con RLS y triggers de acumulación.
 - [x] Onboarding de ingreso/gastos fijos.
-- [x] Ruleta ponderada con animación y bloqueo mensual real (DB-enforced).
+- [x] Ruleta equiprobable con animación y bloqueo mensual real (DB-enforced).
 - [x] Acumulación automática al abrir la app en cada quincena.
 - [x] Pantallas Inicio, Ruleta, Meta, Gastos.
 - [x] Asesor IA de solo-lectura vía Edge Function + Claude.
@@ -325,8 +331,10 @@ Variables de entorno (ver `.env.example`):
       ruleta) con alertas del Asesor.
 
 **v1.3 — Personalización**
-- [ ] Categorías y pesos de la ruleta editables por el usuario (hoy son
-      fijos en `goal_categories`).
+- [x] Categorías propias agregables desde Ruleta (`goal_categories.user_id`
+      no nulo, visibles solo para su dueño vía RLS); todas equiprobables.
+- [ ] Editar/borrar categorías propias después de creadas (hoy solo se
+      agregan; falta el flujo de borrado en la UI, la política RLS ya existe).
 - [ ] Múltiples fuentes de ingreso / frecuencias distintas a quincenal.
 - [ ] Modo pareja/familia (metas compartidas).
 

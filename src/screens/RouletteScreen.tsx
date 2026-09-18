@@ -13,24 +13,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { AddExpenseModal, Card, ErrorBanner, PrimaryButton, RouletteWheel, Screen } from "@/components";
-import {
-  CATEGORY_PRIORITY_WEIGHTS,
-  CUSTOM_CATEGORY_COLORS,
-  CUSTOM_CATEGORY_ICONS,
-} from "@/constants/categories";
+import { CUSTOM_CATEGORY_COLORS, CUSTOM_CATEGORY_ICONS } from "@/constants/categories";
 import { useAppStore } from "@/store/useAppStore";
 import { colors, radius, spacing, typography } from "@/theme";
 import { currentMonthKey, isRouletteWindowOpen, monthLabel } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
 import { angleForCategory } from "@/utils/roulette";
-import type { CategoryPriority, GoalCategory } from "@/types";
-
-const PRIORITY_LABELS: { value: CategoryPriority; label: string }[] = [
-  { value: "maxima", label: "Máxima" },
-  { value: "alta", label: "Alta" },
-  { value: "media", label: "Media" },
-  { value: "baja", label: "Baja" },
-];
+import type { GoalCategory } from "@/types";
 
 export function RouletteScreen() {
   const activeGoal = useAppStore((state) => state.activeGoal);
@@ -52,7 +41,6 @@ export function RouletteScreen() {
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
-  const [priority, setPriority] = useState<CategoryPriority>("media");
   const [icon, setIcon] = useState<string>(CUSTOM_CATEGORY_ICONS[0]);
   const [color, setColor] = useState<string>(CUSTOM_CATEGORY_COLORS[0]);
   const [savingCategory, setSavingCategory] = useState(false);
@@ -91,7 +79,6 @@ export function RouletteScreen() {
     setCategoryError(null);
     setName("");
     setTarget("");
-    setPriority("media");
     setIcon(CUSTOM_CATEGORY_ICONS[0]);
     setColor(CUSTOM_CATEGORY_COLORS[0]);
     setCategoryModalVisible(true);
@@ -102,11 +89,14 @@ export function RouletteScreen() {
     setCategoryError(null);
     setSavingCategory(true);
     try {
+      // Todas las categorías tienen la misma probabilidad (ver
+      // utils/roulette.ts) — priority/weight ya no afectan el sorteo, se
+      // guardan solo por compatibilidad con el esquema de la base de datos.
       await addCategory({
         name: name.trim(),
         defaultTarget: Number(target),
-        priority,
-        weight: CATEGORY_PRIORITY_WEIGHTS[priority],
+        priority: "media",
+        weight: 25,
         icon,
         color,
       });
@@ -139,9 +129,7 @@ export function RouletteScreen() {
       {!alreadySpun && !pendingCategory ? (
         <Pressable onPress={openCategoryModal} style={styles.addCategoryLink}>
           <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
-          <Text style={[typography.caption, styles.addCategoryText]}>
-            ¿Tu meta no está? Agrega una categoría
-          </Text>
+          <Text style={[typography.caption, styles.addCategoryText]}>Añadir nueva categoría</Text>
         </Pressable>
       ) : null}
 
@@ -213,26 +201,6 @@ export function RouletteScreen() {
                   keyboardType="decimal-pad"
                   style={styles.amountInput}
                 />
-              </View>
-
-              <Text style={typography.caption}>Prioridad (define qué tan seguido puede salir)</Text>
-              <View style={styles.chipRow}>
-                {PRIORITY_LABELS.map((item) => (
-                  <Pressable
-                    key={item.value}
-                    onPress={() => setPriority(item.value)}
-                    style={[styles.chip, priority === item.value && styles.chipActive]}
-                  >
-                    <Text
-                      style={[
-                        typography.caption,
-                        priority === item.value && { color: colors.background },
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                ))}
               </View>
 
               <Text style={typography.caption}>Ícono</Text>
@@ -371,17 +339,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.xs,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-  },
-  chipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
   },
   iconRow: {
     flexDirection: "row",
