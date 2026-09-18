@@ -126,11 +126,16 @@ export function RouletteScreen() {
         />
       </View>
 
-      {!alreadySpun && !pendingCategory ? (
+      {!pendingCategory ? (
         <Pressable onPress={openCategoryModal} style={styles.addCategoryLink}>
           <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
           <Text style={[typography.caption, styles.addCategoryText]}>Añadir nueva categoría</Text>
         </Pressable>
+      ) : null}
+      {alreadySpun ? (
+        <Text style={[typography.caption, styles.addCategoryHint]}>
+          Ya giraste este mes — lo que agregues ahora entra a partir del próximo giro.
+        </Text>
       ) : null}
 
       {displayedResult ? (
@@ -283,6 +288,10 @@ const styles = StyleSheet.create({
   },
   addCategoryText: {
     color: colors.accent,
+  },
+  addCategoryHint: {
+    textAlign: "center",
+    color: colors.textTertiary,
   },
   resultCard: {
     gap: spacing.xs,
