@@ -3,23 +3,23 @@
 // Recibe una pregunta del usuario, arma su contexto financiero (ingresos,
 // gastos, metas, historial) consultando Postgres con el JWT del propio
 // usuario (así RLS sigue aplicando: esta función nunca ve datos de nadie
-// más), y consulta a Claude para responder. La IA solo tiene permiso de
+// más), y consulta a Groq para responder. La IA solo tiene permiso de
 // LEER ese contexto — nunca recibe herramientas para escribir en la base de
 // datos ni para mover dinero. Esa restricción es responsabilidad de este
 // archivo, no del modelo: no le damos tools, así que no puede actuar aunque
 // "quisiera".
 //
 // Variables de entorno requeridas (Supabase → Project Settings → Edge Functions):
-//   ANTHROPIC_API_KEY   — clave de la API de Claude
-//   SUPABASE_URL         — provisto automáticamente por la plataforma
-//   SUPABASE_ANON_KEY    — provisto automáticamente por la plataforma
+//   GROQ_API_KEY          — clave de la API de Groq (console.groq.com/keys)
+//   SUPABASE_URL          — provisto automáticamente por la plataforma
+//   SUPABASE_ANON_KEY     — provisto automáticamente por la plataforma
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-const CLAUDE_MODEL = "claude-sonnet-5";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const context = await loadFinancialContext(supabase, user.id);
-    const reply = await askClaude(question, history, context);
+    const reply = await askGroq(question, history, context);
 
     return jsonResponse({ reply });
   } catch (error) {
@@ -103,18 +103,18 @@ async function loadFinancialContext(
   return { income, goals: goals ?? [], expenses: expenses ?? [], contributions: contributions ?? [] };
 }
 
-async function askClaude(
+async function askGroq(
   question: string,
   history: ChatMessage[],
   context: Awaited<ReturnType<typeof loadFinancialContext>>,
 ): Promise<string> {
-  if (!ANTHROPIC_API_KEY) {
-    return "El asesor financiero todavía no está configurado (falta ANTHROPIC_API_KEY).";
+  if (!GROQ_API_KEY) {
+    return "El asesor financiero todavía no está configurado (falta GROQ_API_KEY).";
   }
 
   const systemPrompt = [
     "Eres el asesor financiero dentro de la app Quincena.",
-    "Quincena ayuda al usuario a concentrar su ahorro en UNA sola meta por mes, elegida por una ruleta ponderada.",
+    "Quincena ayuda al usuario a concentrar su ahorro en UNA sola meta por mes, elegida por una ruleta.",
     "Tu única función es responder preguntas usando el contexto financiero proporcionado (ingresos, gastos, metas, historial de aportes).",
     "Responde en español, de forma breve, cálida y directa. Usa cifras concretas del contexto cuando existan.",
     "NUNCA tomas decisiones por el usuario, NUNCA mueves dinero, NUNCA creas ni modificas metas o gastos: solo analizas y sugieres.",
@@ -124,30 +124,28 @@ async function askClaude(
     JSON.stringify(context),
   ].join("\n");
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  // API de Groq: compatible con el formato de chat completions de OpenAI.
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
+      authorization: `Bearer ${GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: CLAUDE_MODEL,
+      model: GROQ_MODEL,
       max_tokens: 600,
-      system: systemPrompt,
-      messages: [...history, { role: "user", content: question }],
+      messages: [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: question }],
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[financial-advisor] Claude error:", errorText);
-    throw new Error("Fallo la llamada a Claude");
+    console.error("[financial-advisor] Groq error:", errorText);
+    throw new Error("Falló la llamada a Groq");
   }
 
   const data = await response.json();
-  const textBlock = data.content?.find((block: { type: string }) => block.type === "text");
-  return textBlock?.text ?? "No pude generar una respuesta esta vez.";
+  return data.choices?.[0]?.message?.content ?? "No pude generar una respuesta esta vez.";
 }
 
 function jsonResponse(body: unknown, status = 200): Response {

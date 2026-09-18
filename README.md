@@ -77,7 +77,7 @@ Supabase (Postgres + Row Level Security + Storage + Edge Functions)
         │
         │  supabase.functions.invoke("financial-advisor")
         ▼
-Edge Function (Deno) ──► Claude API (Anthropic)
+Edge Function (Deno) ──► Groq API
 ```
 
 - **App móvil**: Expo (React Native) + TypeScript, navegación con
@@ -85,10 +85,10 @@ Edge Function (Deno) ──► Claude API (Anthropic)
   (deliberadamente más ligero que Redux para el tamaño de este MVP).
 - **Backend**: Supabase — Postgres como única fuente de verdad, RLS para que
   cada usuario solo pueda leer/escribir sus propias filas, Storage para
-  íconos/imágenes, Auth sin contraseña (OTP por correo).
+  íconos/imágenes, Auth con Google (OAuth).
 - **IA financiera**: una Edge Function de Supabase arma el contexto
   financiero del usuario (respetando RLS, sin service role key) y llama a
-  Claude. El cliente nunca ve la API key de Anthropic.
+  Groq. El cliente nunca ve la API key de Groq.
 
 ### Por qué estas decisiones
 
@@ -127,7 +127,7 @@ quincena/
 │   └── utils/                     # money, date, roulette, accumulation
 └── supabase/
     ├── schema.sql                 # tablas, RLS, triggers, seed
-    └── functions/financial-advisor/index.ts  # Edge Function → Claude
+    └── functions/financial-advisor/index.ts  # Edge Function → Groq
 ```
 
 ## 4. Base de datos
@@ -268,20 +268,21 @@ Todo en `src/components/`, sin dependencias entre pantallas:
 (`spacing.ts`). Cualquier pantalla nueva debería poder construirse solo con
 estos tokens, sin definir colores o tamaños de fuente ad hoc.
 
-## 10. Integración con IA (Claude)
+## 10. Integración con IA (Groq)
 
 `Asesor` (pantalla) → `askAdvisor()` (`src/services/advisorService.ts`) →
 `supabase.functions.invoke("financial-advisor")` → Edge Function
-(`supabase/functions/financial-advisor/index.ts`) → Claude API.
+(`supabase/functions/financial-advisor/index.ts`) → Groq API (modelo
+`llama-3.3-70b-versatile`, endpoint compatible con el formato de OpenAI).
 
 Puntos clave de la integración:
 
-- El **cliente nunca tiene la API key de Anthropic** — vive como secreto de
-  la Edge Function (`ANTHROPIC_API_KEY`).
+- El **cliente nunca tiene la API key de Groq** — vive como secreto de
+  la Edge Function (`GROQ_API_KEY`).
 - La Edge Function arma su cliente de Supabase **con el JWT del usuario**,
   no con la service role key, así que las mismas políticas RLS que protegen
   al resto de la app protegen lo que la IA puede leer.
-- El contexto que recibe Claude es explícitamente de solo lectura:
+- El contexto que recibe el modelo es explícitamente de solo lectura:
   `income_configs`, `goals`, `expenses`, `contributions`. No se le da acceso
   a ninguna operación de escritura ni se expone ninguna "tool" — el system
   prompt además se lo prohíbe explícitamente como refuerzo, pero la garantía
@@ -302,8 +303,8 @@ npx expo start
 Variables de entorno (ver `.env.example`):
 
 - `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` — cliente.
-- `ANTHROPIC_API_KEY` — solo como secreto de la Edge Function
-  (`supabase secrets set ANTHROPIC_API_KEY=...`), nunca en el cliente.
+- `GROQ_API_KEY` — solo como secreto de la Edge Function
+  (`supabase secrets set GROQ_API_KEY=...`), nunca en el cliente.
 
 ## 12. Roadmap: MVP → 1.0
 
@@ -313,7 +314,7 @@ Variables de entorno (ver `.env.example`):
 - [x] Ruleta equiprobable con animación y bloqueo mensual real (DB-enforced).
 - [x] Acumulación automática al abrir la app en cada quincena.
 - [x] Pantallas Inicio, Ruleta, Meta, Gastos.
-- [x] Asesor IA de solo-lectura vía Edge Function + Claude.
+- [x] Asesor IA de solo-lectura vía Edge Function + Groq.
 
 **v1.1 — Confiabilidad**
 - [ ] Mover la acumulación quincenal de "al abrir la app" a una Edge

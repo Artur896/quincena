@@ -8,8 +8,8 @@ export interface AskAdvisorResult {
 /**
  * Envía la pregunta del usuario a la Edge Function `financial-advisor`, que
  * arma el contexto financiero en el servidor (ingresos, gastos, metas,
- * historial) y consulta a Claude. El cliente nunca ve ni manda credenciales
- * de la API de Claude, y la IA nunca recibe permisos para escribir datos.
+ * historial) y consulta a Groq. El cliente nunca ve ni manda credenciales
+ * de la API de Groq, y la IA nunca recibe permisos para escribir datos.
  */
 export async function askAdvisor(
   question: string,
