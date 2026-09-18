@@ -19,7 +19,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+// "llama-3.3-70b-versatile" ya no existe en el catálogo de Groq (verificado
+// contra /openai/v1/models). gpt-oss-120b es un modelo "razonador": gasta
+// tokens pensando antes de escribir la respuesta visible, así que necesita
+// suficiente margen en max_tokens (abajo) o el content puede llegar vacío.
+const GROQ_MODEL = "openai/gpt-oss-120b";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -117,6 +121,7 @@ async function askGroq(
     "Quincena ayuda al usuario a concentrar su ahorro en UNA sola meta por mes, elegida por una ruleta.",
     "Tu única función es responder preguntas usando el contexto financiero proporcionado (ingresos, gastos, metas, historial de aportes).",
     "Responde en español, de forma breve, cálida y directa. Usa cifras concretas del contexto cuando existan.",
+    "Responde en texto plano: sin markdown, sin LaTeX ni notación matemática con \\[ \\] o $$ — la app solo muestra texto simple, no renderiza formato.",
     "NUNCA tomas decisiones por el usuario, NUNCA mueves dinero, NUNCA creas ni modificas metas o gastos: solo analizas y sugieres.",
     "Si el usuario pide algo fuera de lo financiero, redirige la conversación amablemente.",
     "",
@@ -133,7 +138,7 @@ async function askGroq(
     },
     body: JSON.stringify({
       model: GROQ_MODEL,
-      max_tokens: 600,
+      max_tokens: 900,
       messages: [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: question }],
     }),
   });
@@ -145,7 +150,7 @@ async function askGroq(
   }
 
   const data = await response.json();
-  return data.choices?.[0]?.message?.content ?? "No pude generar una respuesta esta vez.";
+  return data.choices?.[0]?.message?.content || "No pude generar una respuesta esta vez.";
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
