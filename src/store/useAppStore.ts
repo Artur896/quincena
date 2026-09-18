@@ -1,7 +1,12 @@
 import { create } from "zustand";
 
 import { GOAL_CATEGORIES } from "@/constants/categories";
-import { createCustomCategory, getCategories, type CreateCategoryInput } from "@/services/categoriesService";
+import {
+  archiveCategory,
+  createCustomCategory,
+  getCategories,
+  type CreateCategoryInput,
+} from "@/services/categoriesService";
 import {
   contributeToGoal,
   createGoalFromRoulette,
@@ -46,6 +51,7 @@ interface AppState {
   }) => Promise<void>;
   spinRoulette: () => Promise<GoalCategory>;
   addCategory: (input: Omit<CreateCategoryInput, "userId">) => Promise<GoalCategory>;
+  removeCategory: (categoryId: string) => Promise<void>;
   confirmContribution: (input: {
     amount: number;
     photoUrl?: string | null;
@@ -126,7 +132,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       throw new Error("Ya giraste la ruleta este mes.");
     }
 
-    const category = pickWeightedCategory(categories);
+    const activeCategories = categories.filter((category) => !category.archivedAt);
+    const category = pickWeightedCategory(activeCategories);
     const spin = await recordSpin(userId, month, category.id);
     const goal = await createGoalFromRoulette(userId, category.id, category.defaultTarget, month);
 
@@ -146,6 +153,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     const category = await createCustomCategory({ userId, ...input });
     set((state) => ({ categories: [...state.categories, category] }));
     return category;
+  },
+
+  removeCategory: async (categoryId) => {
+    const archived = await archiveCategory(categoryId);
+    set((state) => ({
+      categories: state.categories.map((category) =>
+        category.id === archived.id ? archived : category,
+      ),
+    }));
   },
 
   confirmContribution: async (input) => {

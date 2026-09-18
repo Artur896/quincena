@@ -22,6 +22,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     description: "Construcción y patrimonio",
     weight: 40,
     userId: null,
+    archivedAt: null,
   },
   {
     id: "viajes",
@@ -33,6 +34,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     description: "Vacaciones o experiencias importantes",
     weight: 30,
     userId: null,
+    archivedAt: null,
   },
   {
     id: "compu",
@@ -44,6 +46,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     description: "Computadora, periféricos o tecnología",
     weight: 20,
     userId: null,
+    archivedAt: null,
   },
   {
     id: "ropa",
@@ -55,6 +58,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     description: "Vestimenta y accesorios",
     weight: 10,
     userId: null,
+    archivedAt: null,
   },
 ];
 

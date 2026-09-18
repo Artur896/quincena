@@ -56,3 +56,21 @@ export async function createCustomCategory(input: CreateCategoryInput): Promise<
   if (error) throw error;
   return mapGoalCategory(data);
 }
+
+/**
+ * "Quita" una categoría propia de la ruleta sin borrarla — goals.category_id
+ * la referencia sin ON DELETE CASCADE, así que borrarla de verdad rompería
+ * el historial de metas pasadas. La política RLS de update solo deja tocar
+ * filas propias, así que esto no puede archivar ninguna de las 4 globales.
+ */
+export async function archiveCategory(categoryId: string): Promise<GoalCategory> {
+  const { data, error } = await supabase
+    .from("goal_categories")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", categoryId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return mapGoalCategory(data);
+}

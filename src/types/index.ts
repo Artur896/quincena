@@ -13,10 +13,13 @@ export interface GoalCategory {
   color: string;
   icon: string;
   description: string;
-  /** Peso relativo dentro de la ruleta ponderada. Mayor prioridad -> mayor peso. */
+  /** Ya no afecta el sorteo (la ruleta es equiprobable) — se conserva solo por compatibilidad de esquema. */
   weight: number;
   /** null = categoría global de fábrica; si no, el uid del dueño. */
   userId: string | null;
+  /** null = visible en la ruleta; con fecha = el usuario la quitó (se
+   * conserva para que las metas históricas sigan resolviendo bien). */
+  archivedAt: string | null;
 }
 
 export type GoalStatus = "active" | "completed" | "archived";

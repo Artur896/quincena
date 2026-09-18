@@ -66,6 +66,7 @@ export function mapGoalCategory(row: any): GoalCategory {
     description: row.description,
     weight: Number(row.weight),
     userId: row.user_id ?? null,
+    archivedAt: row.archived_at ?? null,
   };
 }
 

@@ -61,10 +61,16 @@ create table if not exists public.goal_categories (
   weight numeric(5, 2) not null check (weight > 0),
   -- null = categoría global (las 4 de fábrica); no-null = categoría que un
   -- usuario agregó a SU propia ruleta, invisible para los demás.
-  user_id uuid references public.profiles (id) on delete cascade
+  user_id uuid references public.profiles (id) on delete cascade,
+  -- "Quitar" una categoría no la borra (goals.category_id la referencia y
+  -- no tiene ON DELETE CASCADE — perdería el historial); solo se archiva,
+  -- así deja de salir en la ruleta pero las metas pasadas la siguen
+  -- resolviendo bien (nombre/color/ícono).
+  archived_at timestamptz
 );
 
 alter table public.goal_categories add column if not exists user_id uuid references public.profiles (id) on delete cascade;
+alter table public.goal_categories add column if not exists archived_at timestamptz;
 
 alter table public.goal_categories enable row level security;
 
@@ -80,6 +86,10 @@ create policy "goal_categories_insert_own" on public.goal_categories
 drop policy if exists "goal_categories_delete_own" on public.goal_categories;
 create policy "goal_categories_delete_own" on public.goal_categories
   for delete using (auth.uid() = user_id);
+
+drop policy if exists "goal_categories_update_own" on public.goal_categories;
+create policy "goal_categories_update_own" on public.goal_categories
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- -----------------------------------------------------------------------------
 -- income_configs: ingreso quincenal y su desglose (transporte, metas, libre).

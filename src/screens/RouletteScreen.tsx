@@ -1,5 +1,7 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,11 +24,13 @@ import { angleForCategory } from "@/utils/roulette";
 import type { GoalCategory } from "@/types";
 
 export function RouletteScreen() {
+  const userId = useAppStore((state) => state.userId);
   const activeGoal = useAppStore((state) => state.activeGoal);
   const spins = useAppStore((state) => state.spins);
   const categories = useAppStore((state) => state.categories);
   const spinRoulette = useAppStore((state) => state.spinRoulette);
   const addCategory = useAppStore((state) => state.addCategory);
+  const removeCategory = useAppStore((state) => state.removeCategory);
 
   const [angle, setAngle] = useState<number | null>(null);
   const [spinning, setSpinning] = useState(false);
@@ -39,16 +43,27 @@ export function RouletteScreen() {
 
   const [expenseModalVisible, setExpenseModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [manageModalVisible, setManageModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
   const [icon, setIcon] = useState<string>(CUSTOM_CATEGORY_ICONS[0]);
   const [color, setColor] = useState<string>(CUSTOM_CATEGORY_COLORS[0]);
   const [savingCategory, setSavingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [manageError, setManageError] = useState<string | null>(null);
 
   const month = currentMonthKey();
   const alreadySpun = spins.some((spin) => spin.month === month);
   const windowOpen = isRouletteWindowOpen();
+
+  // La ruleta solo gira entre categorías activas; una "quitada" sigue en
+  // `categories` (archivada, no borrada) para que las metas pasadas que la
+  // usaron sigan resolviendo bien su nombre/color/ícono en otras pantallas.
+  const activeCategories = categories.filter((category) => !category.archivedAt);
+  const myRemovableCategories = categories.filter(
+    (category) => category.userId === userId && !category.archivedAt,
+  );
 
   const lockedCategory =
     !result && alreadySpun && !pendingCategory && activeGoal?.month === month
@@ -63,7 +78,7 @@ export function RouletteScreen() {
     try {
       const category = await spinRoulette();
       setPendingCategory(category);
-      setAngle(angleForCategory(category.id, categories));
+      setAngle(angleForCategory(category.id, activeCategories));
     } catch (err) {
       setError((err as Error).message);
       setSpinning(false);
@@ -108,6 +123,29 @@ export function RouletteScreen() {
     }
   }
 
+  function confirmRemoveCategory(category: GoalCategory) {
+    Alert.alert(
+      "Quitar categoría",
+      `"${category.name}" ya no saldrá en la ruleta. Tu historial de metas con esta categoría se conserva.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Quitar", style: "destructive", onPress: () => handleRemoveCategory(category.id) },
+      ],
+    );
+  }
+
+  async function handleRemoveCategory(categoryId: string) {
+    setManageError(null);
+    setRemovingId(categoryId);
+    try {
+      await removeCategory(categoryId);
+    } catch (err) {
+      setManageError((err as Error).message);
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -119,7 +157,7 @@ export function RouletteScreen() {
 
       <View style={styles.wheelWrap}>
         <RouletteWheel
-          categories={categories}
+          categories={activeCategories}
           targetAngle={angle}
           onSpinEnd={handleSpinEnd}
           resultColor={pendingCategory?.color}
@@ -127,10 +165,24 @@ export function RouletteScreen() {
       </View>
 
       {!pendingCategory ? (
-        <Pressable onPress={openCategoryModal} style={styles.addCategoryLink}>
-          <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
-          <Text style={[typography.caption, styles.addCategoryText]}>Añadir nueva categoría</Text>
-        </Pressable>
+        <View style={styles.categoryLinksRow}>
+          <Pressable onPress={openCategoryModal} style={styles.addCategoryLink}>
+            <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
+            <Text style={[typography.caption, styles.addCategoryText]}>Añadir nueva categoría</Text>
+          </Pressable>
+          {myRemovableCategories.length > 0 ? (
+            <Pressable
+              onPress={() => {
+                setManageError(null);
+                setManageModalVisible(true);
+              }}
+              style={styles.addCategoryLink}
+            >
+              <Ionicons name="remove-circle-outline" size={16} color={colors.textSecondary} />
+              <Text style={[typography.caption, styles.removeCategoryText]}>Quitar categoría</Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
       {alreadySpun ? (
         <Text style={[typography.caption, styles.addCategoryHint]}>
@@ -261,6 +313,45 @@ export function RouletteScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <Modal visible={manageModalVisible} animationType="slide" transparent onRequestClose={() => setManageModalVisible(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={[typography.title, styles.modalTitle]}>Quitar categoría</Text>
+            <Text style={typography.caption}>
+              Deja de salir en la ruleta; tu historial de metas se conserva igual.
+            </Text>
+
+            {myRemovableCategories.map((category) => (
+              <View key={category.id} style={styles.manageRow}>
+                <View style={[styles.manageIcon, { backgroundColor: category.color }]}>
+                  <Ionicons
+                    name={category.icon as keyof typeof Ionicons.glyphMap}
+                    size={16}
+                    color={colors.background}
+                  />
+                </View>
+                <Text style={[typography.body, styles.manageName]}>{category.name}</Text>
+                <Pressable
+                  onPress={() => confirmRemoveCategory(category)}
+                  disabled={removingId === category.id}
+                  style={styles.manageRemoveButton}
+                >
+                  {removingId === category.id ? (
+                    <ActivityIndicator size="small" color={colors.danger} />
+                  ) : (
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                  )}
+                </Pressable>
+              </View>
+            ))}
+
+            {manageError ? <ErrorBanner message={manageError} /> : null}
+
+            <PrimaryButton label="Listo" onPress={() => setManageModalVisible(false)} variant="secondary" />
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -280,6 +371,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
   },
+  categoryLinksRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: spacing.lg,
+  },
   addCategoryLink: {
     flexDirection: "row",
     alignItems: "center",
@@ -289,9 +385,31 @@ const styles = StyleSheet.create({
   addCategoryText: {
     color: colors.accent,
   },
+  removeCategoryText: {
+    color: colors.textSecondary,
+  },
   addCategoryHint: {
     textAlign: "center",
     color: colors.textTertiary,
+  },
+  manageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  manageIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  manageName: {
+    flex: 1,
+  },
+  manageRemoveButton: {
+    padding: spacing.xs,
   },
   resultCard: {
     gap: spacing.xs,
