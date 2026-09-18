@@ -8,7 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { colors, typography } from "@/theme";
-import { formatMoney } from "@/utils/money";
+import { formatMoney, formatMoneyWorklet } from "@/utils/money";
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
@@ -41,7 +41,7 @@ export function MoneyText({ amount, variant = "body", color, style }: MoneyTextP
   const animatedProps = useAnimatedProps(
     () =>
       ({
-        text: formatMoney(Math.round(animatedValue.value)),
+        text: formatMoneyWorklet(animatedValue.value),
       }) as Partial<TextInputProps>,
   );
 
@@ -73,7 +73,7 @@ export function SignedMoneyText({ amount, style }: { amount: number; style?: Tex
   const animatedProps = useAnimatedProps(
     () =>
       ({
-        text: `${sign}${formatMoney(Math.round(animatedValue.value))}`,
+        text: `${sign}${formatMoneyWorklet(animatedValue.value)}`,
       }) as Partial<TextInputProps>,
   );
 
