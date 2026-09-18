@@ -20,9 +20,11 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own" on public.profiles
   for select using (auth.uid() = id);
 
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles
   for update using (auth.uid() = id);
 
@@ -67,12 +69,15 @@ alter table public.goal_categories add column if not exists user_id uuid referen
 alter table public.goal_categories enable row level security;
 
 drop policy if exists "goal_categories_select_all" on public.goal_categories;
+drop policy if exists "goal_categories_select_own_and_global" on public.goal_categories;
 create policy "goal_categories_select_own_and_global" on public.goal_categories
   for select using (auth.role() = 'authenticated' and (user_id is null or user_id = auth.uid()));
 
+drop policy if exists "goal_categories_insert_own" on public.goal_categories;
 create policy "goal_categories_insert_own" on public.goal_categories
   for insert with check (auth.uid() = user_id);
 
+drop policy if exists "goal_categories_delete_own" on public.goal_categories;
 create policy "goal_categories_delete_own" on public.goal_categories
   for delete using (auth.uid() = user_id);
 
@@ -91,6 +96,7 @@ create table if not exists public.income_configs (
 
 alter table public.income_configs enable row level security;
 
+drop policy if exists "income_configs_all_own" on public.income_configs;
 create policy "income_configs_all_own" on public.income_configs
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -115,6 +121,7 @@ create index if not exists goals_user_id_idx on public.goals (user_id);
 
 alter table public.goals enable row level security;
 
+drop policy if exists "goals_all_own" on public.goals;
 create policy "goals_all_own" on public.goals
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -146,6 +153,7 @@ create index if not exists contributions_user_id_idx on public.contributions (us
 
 alter table public.contributions enable row level security;
 
+drop policy if exists "contributions_all_own" on public.contributions;
 create policy "contributions_all_own" on public.contributions
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -218,6 +226,7 @@ create index if not exists expenses_user_id_date_idx on public.expenses (user_id
 
 alter table public.expenses enable row level security;
 
+drop policy if exists "expenses_all_own" on public.expenses;
 create policy "expenses_all_own" on public.expenses
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -235,6 +244,7 @@ create table if not exists public.roulette_spins (
 
 alter table public.roulette_spins enable row level security;
 
+drop policy if exists "roulette_spins_all_own" on public.roulette_spins;
 create policy "roulette_spins_all_own" on public.roulette_spins
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -246,9 +256,11 @@ insert into storage.buckets (id, name, public)
 values ('quincena-assets', 'quincena-assets', true)
 on conflict (id) do nothing;
 
+drop policy if exists "quincena_assets_public_read" on storage.objects;
 create policy "quincena_assets_public_read" on storage.objects
   for select using (bucket_id = 'quincena-assets');
 
+drop policy if exists "quincena_assets_owner_write" on storage.objects;
 create policy "quincena_assets_owner_write" on storage.objects
   for insert with check (
     bucket_id = 'quincena-assets' and auth.uid()::text = (storage.foldername(name))[1]
