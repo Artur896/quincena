@@ -1,3 +1,4 @@
+export * from "./AddExpenseModal";
 export * from "./Card";
 export * from "./CategoryPill";
 export * from "./EditIncomeModal";

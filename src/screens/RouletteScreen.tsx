@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Card, ErrorBanner, PrimaryButton, RouletteWheel, Screen } from "@/components";
+import { AddExpenseModal, Card, ErrorBanner, PrimaryButton, RouletteWheel, Screen } from "@/components";
 import {
   CATEGORY_PRIORITY_WEIGHTS,
   CUSTOM_CATEGORY_COLORS,
@@ -48,6 +48,7 @@ export function RouletteScreen() {
   const [result, setResult] = useState<GoalCategory | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [expenseModalVisible, setExpenseModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
@@ -176,6 +177,14 @@ export function RouletteScreen() {
         disabled={alreadySpun || !windowOpen || spinning}
         loading={spinning}
       />
+
+      <PrimaryButton
+        label="Registrar un gasto"
+        onPress={() => setExpenseModalVisible(true)}
+        variant="secondary"
+      />
+
+      <AddExpenseModal visible={expenseModalVisible} onClose={() => setExpenseModalVisible(false)} />
 
       <Modal visible={categoryModalVisible} animationType="slide" transparent>
         <KeyboardAvoidingView
